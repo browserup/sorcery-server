@@ -1,0 +1,25 @@
+[package]
+name = "sorcery-server"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0"
+repository = "https://github.com/sorcery-app/sorcery-server"
+
+[dependencies]
+axum = { version = "0.7", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
+tower_governor = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+askama = "0.12"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = "2"
+httpdate = "1"
+# For local development, override with: cargo build --config 'patch.crates-io.srcuri-core.path="../sorcery-desktop/srcuri-core"'
+srcuri-core = { git = "https://github.com/sorcery-app/sorcery-desktop", branch = "main" }
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
+http-body-util = "0.1"
