@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open in Editor - Sorcery</title>
+
+    <!-- Generic OG tags for unfurling -->
+    <meta property="og:title" content="Open in Editor - Sorcery">
+    <meta property="og:description" content="Open this code file directly in your editor">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Sorcery">
+
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Open in Editor - Sorcery">
+    <meta name="twitter:description" content="Open this code file directly in your editor">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+        .container { max-width: 600px; width: 100%; margin: 1rem; }
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        .header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo svg { width: 40px; height: 40px; }
+        .header-text h1 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.125rem;
+        }
+        .file-path {
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            word-break: break-all;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #a78bfa;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-left: auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .content {
+            padding: 1.5rem 2rem;
+        }
+        .status {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 1rem;
+        }
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .action-btn:hover {
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+            transform: translateY(-1px);
+        }
+        .fallback {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .fallback a {
+            color: #a78bfa;
+            text-decoration: none;
+        }
+        .fallback a:hover { text-decoration: underline; }
+        .error-container {
+            padding: 1.5rem 2rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-top: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .error-container h2 {
+            color: #f87171;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        .error-container p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.875rem;
+        }
+        .install-footer {
+            margin-top: 1rem;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .install-footer a {
+            color: #a78bfa;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .install-footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo">
+                    <svg viewBox="0 0 512 512" fill="none">
+                        <rect x="70" y="350" width="200" height="45" rx="8" transform="rotate(-45 70 350)" fill="#1a1a1a"/>
+                        <path d="M330 60 L350 150 L440 170 L350 190 L330 280 L310 190 L220 170 L310 150 Z" fill="url(#sparkleGradient)"/>
+                        <defs>
+                            <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#9333ea"/>
+                                <stop offset="100%" stop-color="#c026d3"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="header-text">
+                    <h1 id="status">Opening in Editor</h1>
+                    <div class="file-path" id="file-info">Loading...</div>
+                </div>
+                <div class="spinner" id="spinner"></div>
+            </div>
+            <div class="content" id="content">
+                <p class="status" id="message">Parsing URL...</p>
+                <a href="#" class="action-btn" id="open-btn" style="display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15,3 21,3 21,9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    Open in Editor
+                </a>
+                <div class="fallback" id="fallback" style="display: none;">
+                    <p>Didn't work? <a href="#" id="retry-link">Try again</a> or check that Sorcery Desktop is running.</p>
+                </div>
+            </div>
+            <div class="error-container" id="error-container" style="display: none;">
+                <h2>Unable to Parse URL</h2>
+                <p id="error-message"></p>
+            </div>
+        </div>
+        <div class="install-footer">
+            <p>Open code links directly in your editor. <a href="https://github.com/sorcery-app/sorcery-desktop">Install Sorcery</a></p>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // DOM elements
+        var statusEl = document.getElementById('status');
+        var fileInfoEl = document.getElementById('file-info');
+        var messageEl = document.getElementById('message');
+        var spinnerEl = document.getElementById('spinner');
+        var openBtn = document.getElementById('open-btn');
+        var fallbackEl = document.getElementById('fallback');
+        var retryLink = document.getElementById('retry-link');
+        var errorContainer = document.getElementById('error-container');
+        var errorMessage = document.getElementById('error-message');
+
+        function showError(msg) {
+            spinnerEl.style.display = 'none';
+            statusEl.textContent = 'Error';
+            fileInfoEl.textContent = '';
+            messageEl.style.display = 'none';
+            errorContainer.style.display = 'block';
+            errorMessage.textContent = msg;
+        }
+
+        function showSuccess(srcuriUrl, displayInfo) {
+            spinnerEl.style.display = 'none';
+            statusEl.textContent = 'Launched!';
+            fileInfoEl.textContent = displayInfo;
+            messageEl.textContent = 'Opening in your editor...';
+            openBtn.href = srcuriUrl;
+            openBtn.style.display = 'inline-flex';
+            retryLink.href = srcuriUrl;
+            fallbackEl.style.display = 'block';
+        }
+
+        // Provider detection
+        function detectProvider(url) {
+            var host = url.hostname;
+            var path = url.pathname;
+
+            if (host === 'github.dev' || host === 'codespaces.new') return 'github';
+            if (host === 'github.com' && path.startsWith('/codespaces/')) return 'github';
+            if (path.startsWith('/-/ide/')) return 'gitlab';
+            if (path.includes('/-/blob/') || path.includes('/-/tree/') || path.includes('/-/blame/') || path.includes('/-/raw/')) return 'gitlab';
+            if (path.includes('/src/branch/') || path.includes('/src/tag/') || path.includes('/src/commit/')) {
+                return host === 'codeberg.org' ? 'codeberg' : 'gitea';
+            }
+            if (path.includes('/_git/')) return 'azure';
+            if (path.includes('/blob/') || path.includes('/tree/') || path.includes('/blame/') || path.includes('/raw/')) return 'github';
+            if (host === 'github.com' || host.endsWith('.github.com')) return 'github';
+            if (host === 'gitlab.com' || host.includes('gitlab')) return 'gitlab';
+            if (host === 'bitbucket.org') return 'bitbucket';
+            if (host === 'gitea.com') return 'gitea';
+            if (host === 'codeberg.org') return 'codeberg';
+            if (host === 'dev.azure.com' || host.endsWith('.visualstudio.com')) return 'azure';
+            return null;
+        }
+
+        // Extract line from GitHub-style fragment (#L42 or #L10-L20)
+        function extractGitHubLine(fragment) {
+            if (!fragment || !fragment.startsWith('L')) return null;
+            var rest = fragment.substring(1);
+            var numStr = rest.split('-')[0].replace(/^L/, '');
+            var num = parseInt(numStr, 10);
+            return isNaN(num) ? null : num;
+        }
+
+        // Extract line from Bitbucket-style fragment (#lines-5 or #lines-5:10)
+        function extractBitbucketLine(fragment) {
+            if (!fragment || !fragment.startsWith('lines-')) return null;
+            var rest = fragment.substring(6);
+            var numStr = rest.includes(':') ? rest.split(':')[0] : rest.split('-')[0];
+            var num = parseInt(numStr, 10);
+            return isNaN(num) ? null : num;
+        }
+
+        // Parse GitHub URLs
+        function parseGitHub(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+
+            // codespaces.new domain
+            if (host === 'codespaces.new') {
+                if (segments.length >= 2) {
+                    return {
+                        remote: 'github.com/' + segments[0] + '/' + segments[1],
+                        repoName: segments[1],
+                        refValue: null,
+                        filePath: null,
+                        line: null
+                    };
+                }
+                return null;
+            }
+
+            // /codespaces/new/:owner/:repo
+            if (segments[0] === 'codespaces') {
+                if (segments.length >= 4 && segments[1] === 'new') {
+                    return {
+                        remote: 'github.com/' + segments[2] + '/' + segments[3],
+                        repoName: segments[3],
+                        refValue: null,
+                        filePath: null,
+                        line: null
+                    };
+                }
+                return null;
+            }
+
+            if (segments.length < 2) return null;
+
+            var owner = segments[0];
+            var repo = segments[1];
+            var remote = host + '/' + owner + '/' + repo;
+
+            if (segments.length === 2) {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+
+            var viewType = segments[2];
+            if (!['blob', 'tree', 'blame', 'raw', 'pull'].includes(viewType)) {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+
+            if (viewType === 'pull') {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+
+            var refValue = segments[3] || null;
+            var filePath = segments.length > 4 ? segments.slice(4).join('/') : null;
+            var line = extractGitHubLine(url.hash.substring(1));
+
+            return { remote: remote, repoName: repo, refValue: refValue, filePath: filePath, line: line };
+        }
+
+        // Parse GitLab URLs
+        function parseGitLab(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+
+            // Web IDE: /-/ide/project/:group/:project/...
+            if (segments.length >= 5 && segments[0] === '-' && segments[1] === 'ide' && segments[2] === 'project') {
+                var group = segments[3];
+                var project = segments[4];
+                var remote = host + '/' + group + '/' + project;
+
+                if (segments.length >= 7 && segments[5] === 'edit') {
+                    var refValue = segments[6];
+                    var filePath = null;
+
+                    if (segments.length >= 9 && segments[7] === '-') {
+                        filePath = segments.slice(8).join('/') || null;
+                    } else if (segments.length === 8 && segments[7] === '-') {
+                        filePath = null;
+                    } else if (segments.length > 7 && segments[7] !== '-') {
+                        filePath = segments.slice(7).join('/');
+                    }
+
+                    return {
+                        remote: remote,
+                        repoName: project,
+                        refValue: refValue,
+                        filePath: filePath,
+                        line: extractGitHubLine(url.hash.substring(1))
+                    };
+                }
+
+                return { remote: remote, repoName: project, refValue: null, filePath: null, line: null };
+            }
+
+            if (segments.length < 2) return null;
+
+            var grp = segments[0];
+            var proj = segments[1];
+            var rem = host + '/' + grp + '/' + proj;
+
+            if (segments.length === 2) {
+                return { remote: rem, repoName: proj, refValue: null, filePath: null, line: null };
+            }
+
+            var dashIdx = segments.indexOf('-');
+            if (dashIdx === -1) {
+                return { remote: rem, repoName: proj, refValue: null, filePath: null, line: null };
+            }
+
+            var vType = segments[dashIdx + 1];
+            if (!['blob', 'tree', 'blame', 'raw'].includes(vType)) {
+                return { remote: rem, repoName: proj, refValue: null, filePath: null, line: null };
+            }
+
+            var ref = segments[dashIdx + 2] || null;
+            var fp = segments.length > dashIdx + 3 ? segments.slice(dashIdx + 3).join('/') : null;
+
+            return {
+                remote: rem,
+                repoName: proj,
+                refValue: ref,
+                filePath: fp,
+                line: extractGitHubLine(url.hash.substring(1))
+            };
+        }
+
+        // Parse Bitbucket URLs
+        function parseBitbucket(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+
+            if (segments.length < 2) return null;
+
+            var workspace = segments[0];
+            var repo = segments[1];
+            var remote = host + '/' + workspace + '/' + repo;
+
+            if (segments.length === 2 || segments[2] !== 'src') {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+
+            var refValue = segments[3] || null;
+            var filePath = segments.length > 4 ? segments.slice(4).join('/') : null;
+
+            return {
+                remote: remote,
+                repoName: repo,
+                refValue: refValue,
+                filePath: filePath,
+                line: extractBitbucketLine(url.hash.substring(1))
+            };
+        }
+
+        // Parse Gitea/Codeberg URLs
+        function parseGitea(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+
+            if (segments.length < 2) return null;
+
+            var owner = segments[0];
+            var repo = segments[1];
+            var remote = host + '/' + owner + '/' + repo;
+
+            if (segments.length === 2 || segments[2] !== 'src') {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+
+            var refType = segments[3];
+            if (!['branch', 'tag', 'commit'].includes(refType)) {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+
+            var refValue = segments[4] || null;
+            var filePath = segments.length > 5 ? segments.slice(5).join('/') : null;
+
+            return {
+                remote: remote,
+                repoName: repo,
+                refValue: refValue,
+                filePath: filePath,
+                line: extractGitHubLine(url.hash.substring(1))
+            };
+        }
+
+        // Parse Azure DevOps URLs
+        function parseAzure(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+
+            var gitIdx = segments.indexOf('_git');
+            if (gitIdx === -1 || gitIdx + 1 >= segments.length) return null;
+
+            var repo = segments[gitIdx + 1];
+            var remotePath = segments.slice(0, gitIdx + 2).join('/');
+            var remote = host + '/' + remotePath;
+
+            var filePath = null;
+            var refValue = null;
+            var line = null;
+
+            var params = new URLSearchParams(url.search);
+            var pathParam = params.get('path');
+            if (pathParam) {
+                filePath = pathParam.replace(/^\//, '');
+            }
+            var versionParam = params.get('version');
+            if (versionParam && versionParam.length >= 2) {
+                refValue = versionParam.substring(2);
+            }
+            var lineParam = params.get('line');
+            if (lineParam) {
+                line = parseInt(lineParam, 10) || null;
+            }
+
+            return {
+                remote: remote,
+                repoName: repo,
+                refValue: refValue,
+                filePath: filePath,
+                line: line
+            };
+        }
+
+        // Build srcuri:// URL from parsed target
+        function buildSrcuriUrl(target) {
+            var url = 'srcuri://' + target.repoName + '/';
+            if (target.filePath) {
+                url += target.filePath;
+            }
+            if (target.line) {
+                url += ':' + target.line;
+            }
+
+            var queryParts = [];
+            if (target.refValue) {
+                queryParts.push('branch=' + encodeURIComponent(target.refValue));
+            }
+            if (target.remote) {
+                queryParts.push('remote=' + encodeURIComponent('https://' + target.remote));
+            }
+            if (queryParts.length > 0) {
+                url += '?' + queryParts.join('&');
+            }
+
+            return url;
+        }
+
+        // Main parsing function
+        function parseRemoteUrl(urlStr) {
+            // Normalize: strip leading slashes, add https if needed
+            var normalized = urlStr.replace(/^\/+/, '');
+            if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+                normalized = 'https://' + normalized;
+            }
+
+            var url;
+            try {
+                url = new URL(normalized);
+            } catch (e) {
+                return { error: 'Invalid URL: ' + urlStr };
+            }
+
+            var provider = detectProvider(url);
+            if (!provider) {
+                return { error: 'Unrecognized repository provider: ' + url.hostname };
+            }
+
+            var target;
+            switch (provider) {
+                case 'github':
+                    target = parseGitHub(url);
+                    break;
+                case 'gitlab':
+                    target = parseGitLab(url);
+                    break;
+                case 'bitbucket':
+                    target = parseBitbucket(url);
+                    break;
+                case 'gitea':
+                case 'codeberg':
+                    target = parseGitea(url);
+                    break;
+                case 'azure':
+                    target = parseAzure(url);
+                    break;
+            }
+
+            if (!target) {
+                return { error: 'Could not parse URL for provider: ' + provider };
+            }
+
+            return { target: target };
+        }
+
+        // Main execution
+        function main() {
+            // Get the path from the URL (everything after srcuri.com/)
+            var path = window.location.pathname;
+            var hash = window.location.hash;
+
+            // Remove leading slash
+            if (path.startsWith('/')) {
+                path = path.substring(1);
+            }
+
+            // Reconstruct the remote URL with hash (line number)
+            var remoteUrl = path + hash;
+
+            if (!remoteUrl) {
+                showError('No URL provided. Expected format: srcuri.com/github.com/owner/repo/blob/main/file.rs#L42');
+                return;
+            }
+
+            fileInfoEl.textContent = remoteUrl;
+
+            var result = parseRemoteUrl(remoteUrl);
+
+            if (result.error) {
+                showError(result.error);
+                return;
+            }
+
+            var target = result.target;
+            var srcuriUrl = buildSrcuriUrl(target);
+
+            // Build display info
+            var displayInfo = target.repoName;
+            if (target.filePath) {
+                displayInfo += '/' + target.filePath;
+            }
+            if (target.line) {
+                displayInfo += ':' + target.line;
+            }
+
+            showSuccess(srcuriUrl, displayInfo);
+
+            // Trigger the redirect
+            window.location.href = srcuriUrl;
+        }
+
+        // Run on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', main);
+        } else {
+            main();
+        }
+    })();
+    </script>
+</body>
+</html>
