@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorcery Server - Comprehensive Testbed</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f14;
+            color: #e0e0e0;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        h1 { color: #a78bfa; margin-bottom: 0.5rem; }
+        h2 { color: #8b5cf6; margin: 2rem 0 1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; }
+        h3 { color: #6366f1; margin: 1.5rem 0 0.75rem; }
+        h4 { color: #818cf8; margin: 1rem 0 0.5rem; font-size: 0.95rem; }
+        .subtitle { color: #888; margin-bottom: 2rem; }
+        .section { margin-bottom: 2rem; }
+        .links { display: flex; flex-direction: column; gap: 0.5rem; }
+        a {
+            color: #60a5fa;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            word-break: break-all;
+            transition: background 0.2s;
+        }
+        a:hover { background: rgba(99, 102, 241, 0.2); }
+        .note {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 3px solid #8b5cf6;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+        .warning {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 3px solid #fbbf24;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+        .success {
+            background: rgba(34, 197, 94, 0.1);
+            border-left: 3px solid #22c55e;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+        .server-url {
+            background: #1a1a24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-family: monospace;
+        }
+        .server-url code { color: #4ade80; }
+        .expected {
+            color: #888;
+            font-size: 0.8rem;
+            margin-left: 1rem;
+        }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #333; }
+        th { color: #a78bfa; }
+        td code { color: #4ade80; font-size: 0.8rem; }
+        .test-group {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .workspace-info {
+            background: #1a1a24;
+            border: 1px solid #4ade80;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .workspace-info code { color: #4ade80; }
+        .inline-link {
+            display: inline;
+            padding: 0.2rem 0.5rem;
+            background: rgba(255,255,255,0.05);
+        }
+        hr { border: none; border-top: 1px solid #333; margin: 2rem 0; }
+    </style>
+</head>
+<body>
+    <h1>Sorcery Server - Comprehensive Testbed</h1>
+    <p class="subtitle">Testing Translator Mode, Mirror Mode, and Direct Protocol Links</p>
+
+    <div class="server-url">
+        Start the server: <code>cargo run</code> → <code>http://localhost:3000</code>
+    </div>
+
+    <div class="workspace-info">
+        <strong>Workspace Mapping Used for Testing:</strong><br>
+        <code>github.com/ericbeland/enhanced_errors</code> → <code>/Users/ebeland/apps/enhanced_errors</code>
+    </div>
+
+    <hr>
+
+    <h2>1. Enhanced Errors Repository Tests (Your Mapped Workspace)</h2>
+    <p class="note">
+        These tests use the <code>enhanced_errors</code> repo which you have mapped locally.
+        The server should detect the local clone and offer to open it directly.
+    </p>
+
+    <h3>1.1 Path-Based Translator (Recommended Format)</h3>
+    <div class="test-group">
+        <h4>Repository Root</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors">localhost:3000/github.com/ericbeland/enhanced_errors</a>
+            <span class="expected">→ Opens repo root (should find local clone)</span>
+        </div>
+
+        <h4>Main Branch - File Only</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/README.md">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/README.md</a>
+            <span class="expected">→ Opens README.md on main branch</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb</a>
+            <span class="expected">→ Opens main Ruby file</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/Gemfile">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/Gemfile</a>
+            <span class="expected">→ Opens Gemfile</span>
+        </div>
+
+        <h4>Main Branch - With Line Numbers</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:1">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:1</a>
+            <span class="expected">→ Line 1 (top of file)</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:10">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:10</a>
+            <span class="expected">→ Line 10</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:50">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:50</a>
+            <span class="expected">→ Line 50</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:100">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:100</a>
+            <span class="expected">→ Line 100</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:200">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:200</a>
+            <span class="expected">→ Line 200</span>
+        </div>
+
+        <h4>Line + Column Numbers</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:42:10">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:42:10</a>
+            <span class="expected">→ Line 42, Column 10</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:100:25">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:100:25</a>
+            <span class="expected">→ Line 100, Column 25</span>
+        </div>
+    </div>
+
+    <h3>1.2 Branch Switching Tests</h3>
+    <div class="test-group">
+        <p class="note">
+            These tests use different branches/tags. The desktop app should offer to switch branches
+            if the local repo is on a different branch, or offer to clone if not present.
+        </p>
+
+        <h4>Main Branch (default)</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:42">localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:42</a>
+            <span class="expected">→ main branch, line 42</span>
+        </div>
+
+        <h4>Master Branch (if exists)</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/master/lib/enhanced_errors.rb:42">localhost:3000/github.com/ericbeland/enhanced_errors/blob/master/lib/enhanced_errors.rb:42</a>
+            <span class="expected">→ master branch (may prompt to switch)</span>
+        </div>
+
+        <h4>Version Tags</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/v0.1.0/lib/enhanced_errors.rb:10">localhost:3000/github.com/ericbeland/enhanced_errors/blob/v0.1.0/lib/enhanced_errors.rb:10</a>
+            <span class="expected">→ Tag v0.1.0 (if exists)</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/v0.2.0/lib/enhanced_errors.rb:10">localhost:3000/github.com/ericbeland/enhanced_errors/blob/v0.2.0/lib/enhanced_errors.rb:10</a>
+            <span class="expected">→ Tag v0.2.0 (if exists)</span>
+
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/v1.0.0/lib/enhanced_errors.rb:10">localhost:3000/github.com/ericbeland/enhanced_errors/blob/v1.0.0/lib/enhanced_errors.rb:10</a>
+            <span class="expected">→ Tag v1.0.0 (if exists)</span>
+        </div>
+    </div>
+
+    <h3>1.3 Query-Based Translator</h3>
+    <div class="test-group">
+        <p class="note">Alternative format using <code>?remote=</code> parameter. Fragment line numbers (#L42) work here.</p>
+
+        <h4>Repository Only</h4>
+        <div class="links">
+            <a href="http://localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors">localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors</a>
+            <span class="expected">→ Repo root via query param</span>
+        </div>
+
+        <h4>Files with Fragment Line Numbers</h4>
+        <div class="links">
+            <a href="http://localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb#L10">localhost:3000/?remote=...enhanced_errors.rb#L10</a>
+            <span class="expected">→ Line 10 via #L fragment</span>
+
+            <a href="http://localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb#L42">localhost:3000/?remote=...enhanced_errors.rb#L42</a>
+            <span class="expected">→ Line 42 via #L fragment</span>
+
+            <a href="http://localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb#L100-L110">localhost:3000/?remote=...enhanced_errors.rb#L100-L110</a>
+            <span class="expected">→ Line range (should use first: 100)</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>2. Rails Repository Tests (Clone/Switch Branch Prompts)</h2>
+    <p class="warning">
+        Unless you have Rails cloned locally, these should trigger "Clone Repository" prompts.
+        If you do have it cloned, they'll test branch switching between main and stable tags.
+    </p>
+
+    <h3>2.1 Rails Main Branch</h3>
+    <div class="test-group">
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails">localhost:3000/github.com/rails/rails</a>
+            <span class="expected">→ Rails repo root</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/main/README.md">localhost:3000/github.com/rails/rails/blob/main/README.md</a>
+            <span class="expected">→ README on main</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/main/activerecord/lib/active_record/base.rb:50">localhost:3000/github.com/rails/rails/blob/main/activerecord/lib/active_record/base.rb:50</a>
+            <span class="expected">→ ActiveRecord::Base line 50</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/main/actionpack/lib/action_controller/base.rb:100">localhost:3000/github.com/rails/rails/blob/main/actionpack/lib/action_controller/base.rb:100</a>
+            <span class="expected">→ ActionController::Base line 100</span>
+        </div>
+    </div>
+
+    <h3>2.2 Rails Stable Tags (Branch Switching)</h3>
+    <div class="test-group">
+        <p class="note">These tags test the branch/tag switching capability.</p>
+
+        <h4>7-2-stable Branch</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/7-2-stable/README.md">localhost:3000/github.com/rails/rails/blob/7-2-stable/README.md</a>
+            <span class="expected">→ 7-2-stable branch</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/7-2-stable/activerecord/lib/active_record/base.rb:50">localhost:3000/github.com/rails/rails/blob/7-2-stable/.../base.rb:50</a>
+            <span class="expected">→ ActiveRecord on 7-2-stable</span>
+        </div>
+
+        <h4>7-1-stable Branch</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/7-1-stable/README.md">localhost:3000/github.com/rails/rails/blob/7-1-stable/README.md</a>
+            <span class="expected">→ 7-1-stable branch</span>
+        </div>
+
+        <h4>7-0-stable Branch</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/7-0-stable/README.md">localhost:3000/github.com/rails/rails/blob/7-0-stable/README.md</a>
+            <span class="expected">→ 7-0-stable branch</span>
+        </div>
+
+        <h4>6-1-stable Branch</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/6-1-stable/README.md">localhost:3000/github.com/rails/rails/blob/6-1-stable/README.md</a>
+            <span class="expected">→ 6-1-stable branch</span>
+        </div>
+
+        <h4>5-2-stable Branch (Older)</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/5-2-stable/README.md">localhost:3000/github.com/rails/rails/blob/5-2-stable/README.md</a>
+            <span class="expected">→ 5-2-stable branch</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/5-2-stable/activerecord/lib/active_record/base.rb:50">localhost:3000/github.com/rails/rails/blob/5-2-stable/.../base.rb:50</a>
+            <span class="expected">→ ActiveRecord on 5-2-stable</span>
+        </div>
+
+        <h4>Version Tags (e.g., v7.1.0)</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/v7.1.0/README.md">localhost:3000/github.com/rails/rails/blob/v7.1.0/README.md</a>
+            <span class="expected">→ Tag v7.1.0</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/v7.0.0/README.md">localhost:3000/github.com/rails/rails/blob/v7.0.0/README.md</a>
+            <span class="expected">→ Tag v7.0.0</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>3. Direct Protocol Links (srcuri://)</h2>
+    <p class="note">
+        These bypass the server entirely. Only work if Sorcery Desktop is installed and registered
+        as the handler for <code>srcuri://</code> protocol.
+    </p>
+
+    <h3>3.1 Basic Protocol Links (Local Paths)</h3>
+    <div class="test-group">
+        <h4>Enhanced Errors (Your Mapped Repo)</h4>
+        <div class="links">
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb">srcuri://enhanced_errors/lib/enhanced_errors.rb</a>
+            <span class="expected">→ Opens file in editor</span>
+
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb:42">srcuri://enhanced_errors/lib/enhanced_errors.rb:42</a>
+            <span class="expected">→ Line 42</span>
+
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb:42:10">srcuri://enhanced_errors/lib/enhanced_errors.rb:42:10</a>
+            <span class="expected">→ Line 42, Column 10</span>
+
+            <a href="srcuri://enhanced_errors/README.md:1">srcuri://enhanced_errors/README.md:1</a>
+            <span class="expected">→ README line 1</span>
+        </div>
+    </div>
+
+    <h3>3.2 Protocol Links with Query Params</h3>
+    <div class="test-group">
+        <h4>With Branch and Remote</h4>
+        <div class="links">
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb:42?branch=main&remote=github.com/ericbeland/enhanced_errors">srcuri://enhanced_errors/...?branch=main&remote=...</a>
+            <span class="expected">→ Full params: branch + remote</span>
+
+            <a href="srcuri://rails/activerecord/lib/active_record/base.rb:50?branch=main&remote=github.com/rails/rails">srcuri://rails/.../base.rb:50?branch=main&remote=github.com/rails/rails</a>
+            <span class="expected">→ Rails ActiveRecord with params</span>
+
+            <a href="srcuri://rails/activerecord/lib/active_record/base.rb:50?branch=7-2-stable&remote=github.com/rails/rails">srcuri://rails/.../base.rb:50?branch=7-2-stable&remote=...</a>
+            <span class="expected">→ Rails 7-2-stable branch</span>
+
+            <a href="srcuri://rails/activerecord/lib/active_record/base.rb:50?branch=5-2-stable&remote=github.com/rails/rails">srcuri://rails/.../base.rb:50?branch=5-2-stable&remote=...</a>
+            <span class="expected">→ Rails 5-2-stable branch</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>4. Mirror Mode (Direct srcuri paths via HTTP)</h2>
+    <p class="note">
+        For when you already have srcuri-formatted paths.
+        The server renders a page that redirects to <code>srcuri://</code>
+    </p>
+
+    <div class="test-group">
+        <h4>Full Mirror URLs</h4>
+        <div class="links">
+            <a href="http://localhost:3000/enhanced_errors/lib/enhanced_errors.rb:42?branch=main&remote=github.com/ericbeland/enhanced_errors">localhost:3000/enhanced_errors/lib/enhanced_errors.rb:42?branch=main&remote=...</a>
+            <span class="expected">→ Mirror page → srcuri redirect</span>
+
+            <a href="http://localhost:3000/rails/activerecord/lib/active_record/base.rb:50?branch=main&remote=github.com/rails/rails">localhost:3000/rails/.../base.rb:50?branch=main&remote=...</a>
+            <span class="expected">→ Rails mirror page</span>
+
+            <a href="http://localhost:3000/rails/README.md?branch=5-2-stable&remote=github.com/rails/rails">localhost:3000/rails/README.md?branch=5-2-stable&remote=...</a>
+            <span class="expected">→ Rails 5-2-stable mirror</span>
+        </div>
+
+        <h4>/open Endpoint</h4>
+        <div class="links">
+            <a href="http://localhost:3000/open#enhanced_errors/lib/enhanced_errors.rb:42">localhost:3000/open#enhanced_errors/lib/enhanced_errors.rb:42</a>
+            <span class="expected">→ /open endpoint with hash</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>5. Line Number Stress Tests</h2>
+    <p class="note">Testing various line number formats and edge cases.</p>
+
+    <div class="test-group">
+        <h4>Single Line Numbers</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:1">Line 1 (first line)</a>
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:999">Line 999 (may be past EOF)</a>
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:0">Line 0 (edge case)</a>
+        </div>
+
+        <h4>Line + Column</h4>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:10:1">Line 10, Col 1</a>
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:10:80">Line 10, Col 80</a>
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb:50:25">Line 50, Col 25</a>
+        </div>
+
+        <h4>Query-Based Line Ranges</h4>
+        <div class="links">
+            <a href="http://localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb#L10-L20">Lines 10-20 (should use 10)</a>
+            <a href="http://localhost:3000/?remote=https://github.com/ericbeland/enhanced_errors/blob/main/lib/enhanced_errors.rb#L50-L100">Lines 50-100 (should use 50)</a>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>6. Other Git Providers</h2>
+
+    <h3>6.1 GitLab</h3>
+    <div class="test-group">
+        <div class="links">
+            <a href="http://localhost:3000/gitlab.com/gitlab-org/gitlab/-/blob/master/README.md">localhost:3000/gitlab.com/gitlab-org/gitlab/-/blob/master/README.md</a>
+            <span class="expected">→ GitLab file</span>
+
+            <a href="http://localhost:3000/gitlab.com/gitlab-org/gitlab/-/blob/master/app/models/user.rb:100">localhost:3000/gitlab.com/gitlab-org/gitlab/-/blob/master/app/models/user.rb:100</a>
+            <span class="expected">→ GitLab with line</span>
+
+            <a href="http://localhost:3000/?remote=https://gitlab.com/gitlab-org/gitlab/-/blob/master/README.md#L10">localhost:3000/?remote=...gitlab...#L10</a>
+            <span class="expected">→ GitLab query-based</span>
+        </div>
+    </div>
+
+    <h3>6.2 Bitbucket</h3>
+    <div class="test-group">
+        <div class="links">
+            <a href="http://localhost:3000/?remote=https://bitbucket.org/atlassian/python-bitbucket/src/master/README.md#lines-5">localhost:3000/?remote=...bitbucket...#lines-5</a>
+            <span class="expected">→ Bitbucket format</span>
+
+            <a href="http://localhost:3000/?remote=https://bitbucket.org/atlassian/python-bitbucket/src/master/README.md#lines-10:20">localhost:3000/?remote=...bitbucket...#lines-10:20</a>
+            <span class="expected">→ Bitbucket line range</span>
+        </div>
+    </div>
+
+    <h3>6.3 Gitea / Codeberg</h3>
+    <div class="test-group">
+        <div class="links">
+            <a href="http://localhost:3000/?remote=https://gitea.com/gitea/tea/src/branch/main/cmd/login.go#L24">localhost:3000/?remote=...gitea...#L24</a>
+            <span class="expected">→ Gitea format</span>
+
+            <a href="http://localhost:3000/?remote=https://codeberg.org/forgejo/forgejo/src/branch/main/README.md#L10">localhost:3000/?remote=...codeberg...#L10</a>
+            <span class="expected">→ Codeberg format</span>
+        </div>
+    </div>
+
+    <h3>6.4 Self-Hosted Pattern Detection</h3>
+    <div class="test-group">
+        <div class="links">
+            <a href="http://localhost:3000/code.company.com/team/project/-/blob/main/src/app.py:50">localhost:3000/code.company.com/.../app.py:50</a>
+            <span class="expected">→ Self-hosted GitLab (/-/blob/)</span>
+
+            <a href="http://localhost:3000/git.internal.io/org/repo/src/branch/develop/main.go:25">localhost:3000/git.internal.io/.../main.go:25</a>
+            <span class="expected">→ Self-hosted Gitea (/src/branch/)</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>7. Special Pages & Error Cases</h2>
+
+    <div class="test-group">
+        <h4>System Pages</h4>
+        <div class="links">
+            <a href="http://localhost:3000/">localhost:3000/</a>
+            <span class="expected">→ Landing page (no remote param)</span>
+
+            <a href="http://localhost:3000/health">localhost:3000/health</a>
+            <span class="expected">→ Health check</span>
+
+            <a href="http://localhost:3000/.well-known/srcuri.json">localhost:3000/.well-known/srcuri.json</a>
+            <span class="expected">→ Protocol discovery</span>
+        </div>
+
+        <h4>Error Cases</h4>
+        <div class="links">
+            <a href="http://localhost:3000/?remote=invalid-not-a-url">localhost:3000/?remote=invalid-not-a-url</a>
+            <span class="expected">→ Error page (invalid URL)</span>
+
+            <a href="http://localhost:3000/?remote=https://unknown-provider.com/foo/bar">localhost:3000/?remote=https://unknown-provider.com/foo/bar</a>
+            <span class="expected">→ Error page (unknown provider)</span>
+
+            <a href="http://localhost:3000/?remote=">localhost:3000/?remote=</a>
+            <span class="expected">→ Error or landing (empty remote)</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>8. Deep File Paths</h2>
+    <div class="test-group">
+        <p class="note">Testing deeply nested file paths.</p>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/rails/rails/blob/main/activerecord/lib/active_record/connection_adapters/postgresql/oid/uuid.rb:10">
+                localhost:3000/.../activerecord/.../postgresql/oid/uuid.rb:10
+            </a>
+            <span class="expected">→ Deep nested Rails file</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/blob/main/actionpack/lib/action_dispatch/middleware/session/cookie_store.rb:50">
+                localhost:3000/.../actionpack/.../middleware/session/cookie_store.rb:50
+            </a>
+            <span class="expected">→ Another deeply nested file</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>9. Tree (Directory) Views</h2>
+    <div class="test-group">
+        <p class="note">Testing directory/tree URL handling.</p>
+        <div class="links">
+            <a href="http://localhost:3000/github.com/ericbeland/enhanced_errors/tree/main/lib">localhost:3000/github.com/.../tree/main/lib</a>
+            <span class="expected">→ Directory view</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/tree/main/activerecord/lib/active_record">localhost:3000/github.com/rails/rails/tree/main/.../active_record</a>
+            <span class="expected">→ Rails directory</span>
+
+            <a href="http://localhost:3000/github.com/rails/rails/tree/7-2-stable">localhost:3000/github.com/rails/rails/tree/7-2-stable</a>
+            <span class="expected">→ Branch root directory</span>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>Quick Reference</h2>
+    <table>
+        <tr>
+            <th>Format</th>
+            <th>Example</th>
+            <th>Notes</th>
+        </tr>
+        <tr>
+            <td>Path-based</td>
+            <td><code>/github.com/owner/repo/blob/branch/file:42</code></td>
+            <td>Shortest format, line via :N suffix</td>
+        </tr>
+        <tr>
+            <td>Query-based</td>
+            <td><code>/?remote=https://github.com/.../file#L42</code></td>
+            <td>Full URL, line via #L fragment</td>
+        </tr>
+        <tr>
+            <td>Mirror mode</td>
+            <td><code>/repo/file:42?branch=x&remote=...</code></td>
+            <td>Already srcuri-formatted</td>
+        </tr>
+        <tr>
+            <td>Direct protocol</td>
+            <td><code>srcuri://repo/file:42?branch=x&remote=...</code></td>
+            <td>Bypasses server</td>
+        </tr>
+    </table>
+
+    <h2>OpenGraph Testing</h2>
+    <p class="note">
+        To test OG tags for Slack/Teams unfurling, use these tools:
+        <br>• <a href="https://developers.facebook.com/tools/debug/" class="inline-link">Facebook Sharing Debugger</a>
+        <br>• <a href="https://cards-dev.twitter.com/validator" class="inline-link">Twitter Card Validator</a>
+        <br>• Or inspect the HTML source of mirror pages
+    </p>
+
+</body>
+</html>
