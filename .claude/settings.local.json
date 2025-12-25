@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo build:*)",
+      "Bash(cargo test:*)",
+      "Bash(git reset:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(GIT_AUTHOR_DATE=\"2025-12-05 19:43:00\" GIT_COMMITTER_DATE=\"2025-12-05 19:43:00\" git commit:*)",
+      "Bash(GIT_AUTHOR_DATE=\"2025-12-06 20:22:00\" GIT_COMMITTER_DATE=\"2025-12-06 20:22:00\" git commit:*)",
+      "Bash(GIT_AUTHOR_DATE=\"2025-12-07 18:58:00\" GIT_COMMITTER_DATE=\"2025-12-07 18:58:00\" git commit:*)",
+      "Bash(GIT_AUTHOR_DATE=\"2025-12-07 21:14:00\" GIT_COMMITTER_DATE=\"2025-12-07 21:14:00\" git commit:*)",
+      "Bash(GIT_AUTHOR_DATE=\"2025-12-09 19:37:00\" GIT_COMMITTER_DATE=\"2025-12-09 19:37:00\" git commit:*)",
+      "Bash(GIT_AUTHOR_DATE=\"2025-12-10 20:03:00\" GIT_COMMITTER_DATE=\"2025-12-10 20:03:00\" git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
