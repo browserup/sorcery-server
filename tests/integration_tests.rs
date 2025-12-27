@@ -157,9 +157,96 @@ async fn test_passthrough_without_https_prefix() {
     assert!(location.contains("remote=https://github.com/owner/repo"));
 }
 
+#[tokio::test]
+async fn test_javascript_url_not_in_href() {
+    // Security: Verify javascript: URLs are not rendered in href attributes
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/?remote=javascript:alert('xss')")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should NOT contain javascript: in any href
+    assert!(
+        !html.contains("href=\"javascript:"),
+        "XSS vulnerability: javascript: URL found in href"
+    );
+}
+
+#[tokio::test]
+async fn test_data_url_not_in_href() {
+    // Security: Verify data: URLs are not rendered in href attributes
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // URL-encode the data: URL to make it valid in HTTP URI
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/?remote=data:text/html,test")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should NOT contain data: in any href
+    assert!(
+        !html.contains("href=\"data:"),
+        "XSS vulnerability: data: URL found in href"
+    );
+}
+
+#[tokio::test]
+async fn test_branch_with_special_chars_is_url_encoded() {
+    // Test that branch names with +, #, = are properly URL-encoded in mirror page output
+    // Examples: "inputprocessing/c++" and "#pr470" from real GitHub repos
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+
+    // Mirror path with branch containing + character
+    // This tests that render_mirror_page URL-encodes the branch in the srcuri:// URL
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/src/file.rs:42?branch=feature/c%2B%2B")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // The srcuri:// URL in the HTML should have the branch URL-encoded
+    // "feature/c++" becomes "feature%2Fc%2B%2B"
+    assert!(
+        html.contains("branch=feature%2Fc%2B%2B"),
+        "Expected URL-encoded branch in srcuri:// URL. HTML snippet: {}",
+        &html[..500.min(html.len())]
+    );
+}
+
 fn create_test_app() -> axum::Router {
     use std::path::PathBuf;
     use std::sync::Arc;
+    use axum::routing::get;
 
     let tenants_dir = PathBuf::from("tenants");
     let tenant_manager = Arc::new(sorcery_server::tenant::TenantManager::new(tenants_dir));
@@ -168,12 +255,13 @@ fn create_test_app() -> axum::Router {
     let state = sorcery_server::AppState { tenant_manager, base_domain };
 
     axum::Router::new()
-        .route("/", axum::routing::get(sorcery_server::routes::root_handler))
-        .route("/open", axum::routing::get(sorcery_server::routes::open_handler))
+        .route("/", get(sorcery_server::routes::root_handler))
+        .route("/open", get(sorcery_server::routes::open_handler))
         .route(
             "/.well-known/srcuri.json",
-            axum::routing::get(sorcery_server::routes::wellknown_handler),
+            get(sorcery_server::routes::wellknown_handler),
         )
-        .route("/health", axum::routing::get(|| async { "OK" }))
+        .route("/health", get(|| async { "OK" }))
+        .fallback(get(sorcery_server::routes::catchall_handler))
         .with_state(state)
 }
