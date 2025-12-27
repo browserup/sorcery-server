@@ -13,7 +13,7 @@ use std::time::{Duration, SystemTime};
 use httpdate::HttpDate;
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::trace::TraceLayer;
-use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use sorcery_server::{AppState, routes, tenant, subdomain::{self, SubdomainMode}};
@@ -44,6 +44,7 @@ async fn main() {
         GovernorConfigBuilder::default()
             .per_second(1)
             .burst_size(60)
+            .key_extractor(SmartIpKeyExtractor)
             .finish()
             .expect("Failed to build rate limiter config")
     );
@@ -88,7 +89,7 @@ async fn main() {
     println!("   Mirror:       http://localhost:{}/repo/src/lib.rs:42?branch=main", port);
     println!("   Health:       http://localhost:{}/health\n", port);
 
-    if let Err(e) = axum::serve(listener, app).await {
+    if let Err(e) = axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await {
         tracing::error!("Server error: {}", e);
         std::process::exit(1);
     }
