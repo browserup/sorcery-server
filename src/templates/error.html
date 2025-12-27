@@ -65,7 +65,9 @@
             <h1>Unable to Parse URL</h1>
             <p class="message">{{ message }}</p>
             <div class="url-box">{{ url }}</div>
+            {% if !url.is_empty() %}
             <a href="{{ url }}" class="link">Open original URL &rarr;</a>
+            {% endif %}
         </div>
     </div>
 </body>

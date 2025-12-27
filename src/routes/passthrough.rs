@@ -8,6 +8,28 @@ use serde::Deserialize;
 use crate::parsing::{parse_remote_url, extract_path_line_suffix, ParseError, SrcuriTarget};
 use super::templates::{MirrorTemplate, ErrorTemplate};
 
+/// Sanitize URL for use in href attribute - only allow http/https protocols
+/// Blocks javascript:, data:, vbscript: and other dangerous protocols
+fn safe_href_url(url: &str) -> String {
+    let lower = url.to_lowercase();
+    if lower.starts_with("http://") || lower.starts_with("https://") {
+        url.to_string()
+    } else {
+        String::new()
+    }
+}
+
+fn is_valid_ref_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.chars().all(|c| {
+            c.is_ascii_alphanumeric()
+                || matches!(c, '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=')
+        })
+        && !name.starts_with('/')
+        && !name.ends_with('/')
+        && !name.contains("..")
+}
+
 #[derive(Deserialize)]
 pub struct PassthroughQuery {
     pub remote: Option<String>,
@@ -117,8 +139,30 @@ fn passthrough_redirect(remote_url: &str) -> Response {
 
 /// Serve the mirror page for srcuri:// protocol redirect
 fn serve_mirror_page(path: &str, params: MirrorQuery) -> Response {
+    if let Some(ref branch) = params.branch {
+        if !is_valid_ref_name(branch) {
+            return render_invalid_ref_error(branch);
+        }
+    }
     let target = parse_mirror_path(path, params);
     render_mirror_page(&target)
+}
+
+fn render_invalid_ref_error(ref_name: &str) -> Response {
+    let safe_display: String = ref_name
+        .chars()
+        .take(100)
+        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=' | ' ') { c } else { '?' })
+        .collect();
+
+    let template = ErrorTemplate {
+        message: format!(
+            "Invalid branch name: \"{}\". Branch names may only contain letters, numbers, and - _ . / @ , ( ) + # =",
+            safe_display
+        ),
+        url: String::new(),
+    };
+    Html(template.render().unwrap_or_else(|e| format!("Template error: {}", e))).into_response()
 }
 
 /// Parse a mirror mode path like "repo/src/lib.rs:42" or "//absolute/path.rs:42"
@@ -191,7 +235,12 @@ fn render_mirror_page(target: &SrcuriTarget) -> Response {
 
     let mut query_parts = Vec::new();
     if let Some(ref branch) = target.ref_value {
-        query_parts.push(format!("branch={}", branch));
+        // URL-encode branch names to handle special characters like + # =
+        // Examples: "inputprocessing/c++" becomes "inputprocessing%2Fc%2B%2B"
+        //           "#pr470" becomes "%23pr470"
+        // Without encoding, + means space and # truncates at fragment delimiter.
+        let encoded: String = url::form_urlencoded::byte_serialize(branch.as_bytes()).collect();
+        query_parts.push(format!("branch={}", encoded));
     }
     if !target.remote.is_empty() {
         // Always output with https:// prefix for git clone compatibility
@@ -251,7 +300,7 @@ fn render_mirror_page(target: &SrcuriTarget) -> Response {
 fn render_error(error: ParseError) -> Html<String> {
     let template = ErrorTemplate {
         message: error.message,
-        url: error.original_url,
+        url: safe_href_url(&error.original_url),
     };
     Html(template.render().unwrap_or_else(|e| {
         format!("Template error: {}", e)
