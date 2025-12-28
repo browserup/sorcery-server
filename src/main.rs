@@ -16,7 +16,7 @@ use tower_http::trace::TraceLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use sorcery_server::{AppState, routes, tenant, subdomain::{self, SubdomainMode}};
+use sorcery_server::{AppState, csp, routes, tenant, subdomain::{self, SubdomainMode}};
 
 #[tokio::main]
 async fn main() {
@@ -59,6 +59,7 @@ async fn main() {
         .route("/static/app.js", get(serve_app_js))
         .fallback(get(subdomain_aware_fallback))
         .with_state(state)
+        .layer(axum::middleware::from_fn(csp::csp_middleware))
         .layer(GovernorLayer { config: governor_config })
         .layer(
             CorsLayer::new()

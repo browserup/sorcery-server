@@ -158,6 +158,28 @@ async fn test_passthrough_without_https_prefix() {
 }
 
 #[tokio::test]
+async fn test_csp_header_present() {
+    // Verify Content-Security-Policy header is set on responses
+    let app = create_test_app();
+
+    let response = app
+        .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    let csp = response
+        .headers()
+        .get("content-security-policy")
+        .expect("CSP header should be present");
+
+    let csp_str = csp.to_str().unwrap();
+    assert!(csp_str.contains("script-src"), "CSP should include script-src");
+    assert!(csp_str.contains("sha256-"), "CSP should include script hashes");
+    assert!(csp_str.contains("object-src 'none'"), "CSP should block plugins");
+    assert!(csp_str.contains("frame-ancestors 'none'"), "CSP should prevent clickjacking");
+}
+
+#[tokio::test]
 async fn test_javascript_url_not_in_href() {
     // Security: Verify javascript: URLs are not rendered in href attributes
     use http_body_util::BodyExt;
@@ -264,4 +286,5 @@ fn create_test_app() -> axum::Router {
         .route("/health", get(|| async { "OK" }))
         .fallback(get(sorcery_server::routes::catchall_handler))
         .with_state(state)
+        .layer(axum::middleware::from_fn(sorcery_server::csp::csp_middleware))
 }

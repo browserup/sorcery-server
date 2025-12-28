@@ -20,6 +20,11 @@ httpdate = "1"
 # For local development, override with: cargo build --config 'patch.crates-io.srcuri-core.path="../sorcery-desktop/srcuri-core"'
 srcuri-core = { git = "https://github.com/sorcery-app/sorcery-desktop", branch = "main" }
 
+[build-dependencies]
+sha2 = "0.10"
+base64 = "0.22"
+regex = "1"
+
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
 http-body-util = "0.1"
