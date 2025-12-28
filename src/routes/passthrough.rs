@@ -32,24 +32,6 @@ fn is_valid_branch_name(name: &str) -> bool {
         && !name.contains("..")
 }
 
-/// Validate tag names - semver-focused subset of branch chars
-fn is_valid_tag_name(name: &str) -> bool {
-    !name.is_empty()
-        && name.len() <= 128
-        && name.chars().all(|c| {
-            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | '+')
-        })
-        && !name.starts_with('/')
-        && !name.ends_with('/')
-        && !name.contains("..")
-}
-
-/// Validate commit SHA - hex only (7-64 chars for short SHA to SHA-256)
-fn is_valid_commit_sha(sha: &str) -> bool {
-    let len = sha.len();
-    (7..=64).contains(&len) && sha.chars().all(|c| c.is_ascii_hexdigit())
-}
-
 /// Validate remote URL structure
 fn is_valid_remote_url(url: &str) -> bool {
     let path = url
@@ -74,6 +56,17 @@ fn is_valid_workspace_name(name: &str) -> bool {
         && name.chars().all(|c| {
             c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')
         })
+}
+
+/// Validate file paths - safe characters only, no shell metacharacters
+/// Allows: alphanumeric, standard path chars (-_./), space, @ (npm scopes), + (C++ files)
+fn is_valid_file_path(path: &str) -> bool {
+    !path.is_empty()
+        && path.len() <= 1024
+        && path.chars().all(|c| {
+            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ' ' | '@' | '+')
+        })
+        && !path.contains("..")
 }
 
 #[derive(Deserialize)]
@@ -202,6 +195,12 @@ fn serve_mirror_page(path: &str, params: MirrorQuery) -> Response {
     if !target.repo_name.is_empty() && !target.is_absolute && !is_valid_workspace_name(&target.repo_name) {
         return render_invalid_param_error("workspace", &target.repo_name);
     }
+    // Validate file path (length limit, path traversal)
+    if let Some(ref file_path) = target.file_path {
+        if !is_valid_file_path(file_path) {
+            return render_invalid_param_error("path", file_path);
+        }
+    }
     render_mirror_page(&target)
 }
 
@@ -246,6 +245,10 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
         ),
         "commit" => format!(
             "Invalid commit SHA: \"{}\". Commit SHAs must be 7-64 hexadecimal characters (0-9, a-f)",
+            safe_display
+        ),
+        "path" => format!(
+            "Invalid file path: \"{}\". Paths may only contain letters, numbers, and - _ . / @ + (space)",
             safe_display
         ),
         _ => format!("Invalid {}: \"{}\"", param_type, safe_display),
