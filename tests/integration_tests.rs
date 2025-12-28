@@ -417,3 +417,283 @@ fn create_test_app() -> axum::Router {
         .with_state(state)
         .layer(axum::middleware::from_fn(sorcery_server::csp::csp_middleware))
 }
+
+#[tokio::test]
+async fn test_file_path_script_injection_escaped() {
+    // Security: Verify that <script> tags in file paths are HTML-escaped
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Percent-encoded <script>alert(1)</script>
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/%3Cscript%3Ealert(1)%3C%2Fscript%3E")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should NOT contain unescaped script tags
+    assert!(
+        !html.contains("<script>alert"),
+        "XSS vulnerability: unescaped script tag in file_path. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_file_path_quotes_escaped() {
+    // Security: Verify that quotes in file paths are HTML-escaped
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Percent-encoded " onmouseover="alert(1)
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file%22%20onmouseover%3D%22alert(1)")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should NOT contain unescaped quotes that could break out of attributes
+    assert!(
+        !html.contains("\" onmouseover="),
+        "XSS vulnerability: unescaped quotes in file_path. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_file_path_question_mark_rejected() {
+    // Security: ? in file paths is rejected (potential URL injection)
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Percent-encoded file.rs?evil=param
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs%3Fevil%3Dparam")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_line_number_non_numeric_becomes_filename() {
+    // Non-numeric ":abc" suffix is treated as part of filename (correct behavior)
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:abc")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Non-numeric suffix becomes part of filename, not extracted as line number
+    // This is safe - Askama HTML-escapes the content
+    assert!(
+        html.contains("file.rs:abc"),
+        "Non-numeric suffix should be part of filename"
+    );
+}
+
+#[tokio::test]
+async fn test_line_number_numeric_extracted() {
+    // Verify that numeric line suffixes ARE extracted properly
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:42")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should have :42 extracted as line number, separate from filename
+    assert!(
+        html.contains("srcuri://myrepo/file.rs:42"),
+        "Numeric line suffix should be extracted. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_file_path_traversal_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Path traversal attempt
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/../../etc/passwd")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_too_long_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Generate path > 1024 chars
+    let long_path = format!("/myrepo/{}", "a".repeat(1100));
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri(&long_path)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_shell_metachar_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Semicolon is a shell metacharacter
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs;rm%20-rf")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_quotes_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Double quote
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file%22.rs")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_backtick_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Backtick for command substitution
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file%60whoami%60.rs")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_angle_brackets_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Angle brackets (HTML/redirect)
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/%3Cscript%3E.js")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_pipe_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Pipe for shell piping
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file%7Ccat.rs")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
