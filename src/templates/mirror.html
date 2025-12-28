@@ -230,10 +230,14 @@
         </div>
     </div>
 
+    <!-- Data attributes for CSP-compliant static script -->
+    <div id="page-data" data-srcuri="{{ srcuri_url }}" data-view="{{ view_url }}" style="display:none;"></div>
+
     <script>
         (function() {
-            var srcuriUrl = '{{ srcuri_url }}';
-            var viewUrl = '{{ view_url }}';
+            var dataEl = document.getElementById('page-data');
+            var srcuriUrl = dataEl.getAttribute('data-srcuri');
+            var viewUrl = dataEl.getAttribute('data-view');
             var statusEl = document.getElementById('status');
             var spinnerEl = document.getElementById('spinner');
             var fallbackEl = document.getElementById('fallback');
