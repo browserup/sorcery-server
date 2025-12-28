@@ -3,97 +3,991 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorcery - Open code links in your editor</title>
+    <title>Sorcery - Create shareable code links</title>
+    <meta name="description" content="Create shareable code links that open directly in your editor. Free, open source, no sign-up required.">
+    <meta property="og:title" content="Sorcery - Create shareable code links">
+    <meta property="og:description" content="Create shareable code links that open directly in your editor. Free, open source, no sign-up required.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Sorcery">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0f;
-            min-height: 100vh;
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #fff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 0.75rem 1.5rem;
+        }
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #1a1a1a;
+        }
+        .header-brand svg { width: 36px; height: 36px; }
+        .header-brand span { font-size: 1.25rem; font-weight: 600; }
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .header-link {
+            color: #1a1a1a;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .header-link:hover { color: #9333ea; }
+        .header-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .header-btn:hover {
+            box-shadow: 0 4px 16px rgba(147, 51, 234, 0.4);
+            transform: translateY(-1px);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 4rem 1.5rem 3rem;
+            text-align: center;
+        }
+        .hero-inner {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero-subtitle {
+            font-size: 1.125rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2.5rem;
+        }
+
+        /* Link Generator */
+        .generator {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .generator-form {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .generator-input {
+            flex: 1;
+            min-width: 280px;
+            padding: 0.875rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9375rem;
+        }
+        .generator-input::placeholder { color: rgba(255, 255, 255, 0.4); }
+        .generator-input:focus {
+            outline: none;
+            border-color: #a78bfa;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+        }
+        .generator-btn {
+            padding: 0.875rem 1.5rem;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .generator-btn:hover {
+            box-shadow: 0 8px 24px rgba(147, 51, 234, 0.4);
+            transform: translateY(-1px);
+        }
+        .generator-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .generator-hint {
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.4);
+            margin-top: 0.75rem;
+        }
+
+        /* Result */
+        .result {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: left;
+        }
+        .result.visible { display: block; }
+        .result-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #a78bfa;
+            margin-bottom: 1rem;
+        }
+        .result-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .result-row:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .result-label {
+            flex-shrink: 0;
+            width: 70px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            padding-top: 0.25rem;
+        }
+        .result-value {
+            flex: 1;
+            min-width: 0;
+        }
+        .result-link {
+            display: block;
+            color: #a78bfa;
+            text-decoration: none;
+            font-size: 0.875rem;
+            word-break: break-all;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .result-link:hover { text-decoration: underline; }
+        .result-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .result-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1rem;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .result-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .result-btn.copied {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        /* Error */
+        .error-msg {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            color: #f87171;
+            font-size: 0.875rem;
+            margin-top: 1rem;
+        }
+        .error-msg.visible { display: block; }
+
+        /* Value Props */
+        .value-props {
+            padding: 3rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .value-props-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 2rem;
+        }
+        .value-prop {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        .value-prop-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.2), rgba(192, 38, 211, 0.2));
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
         }
-        .container { max-width: 640px; width: 100%; margin: 1rem; }
-        .card {
+        .value-prop-icon svg { width: 24px; height: 24px; color: #a78bfa; }
+        .value-prop h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .value-prop p {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 3rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .how-it-works-inner {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .step {
+            text-align: center;
+            padding: 1rem;
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 0.75rem;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .step p {
+            font-size: 0.9375rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .code-example {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 2.5rem;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
         }
-        .logo {
-            width: 56px;
-            height: 56px;
-            margin-bottom: 1.5rem;
-        }
-        h1 {
-            font-size: 1.5rem;
-            margin-bottom: 0.75rem;
-        }
-        .subtitle {
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 2rem;
-            line-height: 1.5;
-        }
-        h2 {
-            font-size: 0.875rem;
-            color: rgba(255, 255, 255, 0.5);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.75rem;
-        }
-        .example {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 1rem;
+        .code-example code {
+            display: block;
             font-family: 'SF Mono', 'Fira Code', monospace;
             font-size: 0.8125rem;
             color: rgba(255, 255, 255, 0.7);
             word-break: break-all;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.75rem;
         }
-        .arrow {
-            display: block;
-            text-align: center;
+        .code-example .arrow {
             color: rgba(255, 255, 255, 0.3);
-            margin: 0.5rem 0;
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
         }
-        .link {
+        .code-example .result-text {
+            font-size: 0.875rem;
             color: #a78bfa;
-            text-decoration: none;
         }
-        .link:hover { text-decoration: underline; }
+
+        /* Stats */
+        .stats {
+            padding: 3rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .stats-inner {
+            max-width: 720px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 0.25rem;
+        }
+
+        /* Advanced Usage */
+        .advanced {
+            padding: 3rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .advanced-inner {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .advanced-content {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .advanced h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .advanced p {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 1rem;
+        }
+        .advanced code {
+            display: block;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            word-break: break-all;
+            margin-bottom: 1rem;
+        }
+        .param-list {
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .param-list dt {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: #a78bfa;
+            margin-top: 0.75rem;
+        }
+        .param-list dd { margin-left: 1rem; }
+
+        /* Footer */
+        .footer {
+            padding: 3rem 1.5rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .footer-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .footer-col h4 {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 1rem;
+        }
+        .footer-col ul {
+            list-style: none;
+        }
+        .footer-col li { margin-bottom: 0.5rem; }
+        .footer-col a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        .footer-col a:hover { color: #a78bfa; }
+        .footer-col .coming-soon {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.875rem;
+        }
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 0.8125rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header-nav { gap: 1rem; }
+            .header-link { display: none; }
+            .stats-inner { grid-template-columns: 1fr; gap: 1rem; }
+            .stat-number { font-size: 2rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <svg class="logo" viewBox="0 0 512 512" fill="none">
-                <rect x="70" y="350" width="200" height="45" rx="8" transform="rotate(-45 70 350)" fill="#1a1a1a"/>
-                <path d="M330 60 L350 150 L440 170 L350 190 L330 280 L310 190 L220 170 L310 150 Z" fill="url(#sparkleGradient)"/>
-                <defs>
-                    <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#9333ea"/>
-                        <stop offset="100%" stop-color="#c026d3"/>
-                    </linearGradient>
-                </defs>
-            </svg>
-            <h1>Sorcery</h1>
-            <p class="subtitle">Open repository links directly in your editor, on the right line. No more copy-paste-navigate.</p>
-
-            <h2>How to Use</h2>
-            <div class="example">
-                https://srcuri.com/?remote=https://github.com/user/repo/blob/main/file.rs#L42
-            </div>
-            <span class="arrow">&darr;</span>
-            <div class="example">
-                Opens file.rs at line 42 in your editor
-            </div>
-
-            <p><a href="https://github.com/sorcery-app/sorcery-desktop" class="link">Install Sorcery Desktop &rarr;</a></p>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="header-brand">
+                <svg viewBox="0 0 512 512" fill="none">
+                    <rect x="70" y="350" width="200" height="45" rx="8" transform="rotate(-45 70 350)" fill="#1a1a1a"/>
+                    <path d="M330 60 L350 150 L440 170 L350 190 L330 280 L310 190 L220 170 L310 150 Z" fill="url(#sparkleGradient)"/>
+                    <defs>
+                        <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#9333ea"/>
+                            <stop offset="100%" stop-color="#c026d3"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span>Sorcery</span>
+            </a>
+            <nav class="header-nav">
+                <a href="https://github.com/browserup/sorcery-desktop" class="header-link" target="_blank" rel="noopener">Docs</a>
+                <a href="https://github.com/browserup/sorcery-desktop/releases" class="header-btn" target="_blank" rel="noopener">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download Sorcery
+                </a>
+            </nav>
         </div>
-    </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>Create shareable code links</h1>
+            <p class="hero-subtitle">Free. Open source. No sign-up required.</p>
+
+            <div class="generator">
+                <form class="generator-form" id="generator-form">
+                    <input
+                        type="text"
+                        class="generator-input"
+                        id="url-input"
+                        placeholder="Paste a code link from GitHub, GitLab, Bitbucket..."
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                    <button type="submit" class="generator-btn" id="generate-btn">Create Link</button>
+                </form>
+                <p class="generator-hint">Supports GitHub, GitLab, Bitbucket, Gitea, Codeberg, and Azure DevOps</p>
+            </div>
+
+            <div class="error-msg" id="error-msg"></div>
+
+            <div class="result" id="result">
+                <div class="result-title">Your srcuri.com link is ready!</div>
+                <div class="result-row">
+                    <div class="result-label">Original</div>
+                    <div class="result-value">
+                        <a href="#" class="result-link" id="original-link" target="_blank" rel="noopener"></a>
+                    </div>
+                </div>
+                <div class="result-row">
+                    <div class="result-label">Sorcery</div>
+                    <div class="result-value">
+                        <a href="#" class="result-link" id="sorcery-link"></a>
+                    </div>
+                </div>
+                <div class="result-actions">
+                    <button type="button" class="result-btn" id="copy-link-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Copy Link
+                    </button>
+                    <button type="button" class="result-btn" id="copy-markdown-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14,2 14,8 20,8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        Copy as Markdown
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="how-it-works-inner">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <p>Copy a link from GitHub, GitLab, or any supported provider</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <p>Paste it above to create a srcuri.com link</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <p>Share the link - it opens directly in the recipient's editor</p>
+                </div>
+            </div>
+            <div class="code-example">
+                <code>https://srcuri.com/repo/file.rs:42?branch=main&amp;remote=https://github.com/user/repo</code>
+                <div class="arrow">&darr;</div>
+                <div class="result-text">Opens file.rs at line 42 in your editor</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats">
+        <div class="stats-inner">
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Links Created</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Repos Connected</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Active Users</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Advanced Usage -->
+    <section class="advanced">
+        <div class="advanced-inner">
+            <h2 class="section-title">For Power Users</h2>
+            <div class="advanced-content">
+                <h3>Manual URL Construction</h3>
+                <p>You can construct srcuri.com links manually using this format:</p>
+                <code>https://srcuri.com/{repo}/{path}:{line}?branch={branch}&amp;remote={remote_url}</code>
+                <dl class="param-list">
+                    <dt>repo</dt>
+                    <dd>Repository name (e.g., "sorcery-desktop")</dd>
+                    <dt>path</dt>
+                    <dd>File path within the repo (e.g., "src/main.rs")</dd>
+                    <dt>line</dt>
+                    <dd>Line number to open (optional)</dd>
+                    <dt>branch</dt>
+                    <dd>Branch, tag, or commit reference</dd>
+                    <dt>remote</dt>
+                    <dd>Full URL to the repository (URL-encoded)</dd>
+                </dl>
+            </div>
+        </div>
+    </section>
+
+    <!-- Value Props -->
+    <section class="value-props" id="features">
+        <div class="value-props-inner">
+            <div class="value-prop">
+                <div class="value-prop-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                        <line x1="9" y1="9" x2="9.01" y2="9"/>
+                        <line x1="15" y1="9" x2="15.01" y2="9"/>
+                    </svg>
+                </div>
+                <h3>Free Forever</h3>
+                <p>No sign-up, no limits. srcuri.com is a free public utility.</p>
+            </div>
+            <div class="value-prop">
+                <div class="value-prop-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                    </svg>
+                </div>
+                <h3>Open Source</h3>
+                <p>Built in public. Contribute on GitHub.</p>
+            </div>
+            <div class="value-prop">
+                <div class="value-prop-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                </div>
+                <h3>Works Everywhere</h3>
+                <p>VS Code, IntelliJ, Cursor, Vim, and more.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="https://github.com/browserup/sorcery-desktop#readme" target="_blank" rel="noopener">About</a></li>
+                        <li><a href="https://github.com/browserup/sorcery-desktop" target="_blank" rel="noopener">Open Source</a></li>
+                        <li><a href="#features">Free</a></li>
+                        <li><span class="coming-soon">Enterprise Pricing (Coming Soon)</span></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>srcuri.com</h4>
+                    <ul>
+                        <li><a href="https://github.com/browserup/sorcery-desktop/issues" target="_blank" rel="noopener">Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Sorcery Desktop</h4>
+                    <ul>
+                        <li><a href="https://github.com/browserup/sorcery-desktop/releases" target="_blank" rel="noopener">Download</a></li>
+                        <li><a href="https://github.com/browserup/sorcery-desktop" target="_blank" rel="noopener">GitHub</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                Copyright 2025. All Rights Reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    (function() {
+        'use strict';
+
+        var form = document.getElementById('generator-form');
+        var input = document.getElementById('url-input');
+        var resultEl = document.getElementById('result');
+        var errorEl = document.getElementById('error-msg');
+        var originalLink = document.getElementById('original-link');
+        var sorceryLink = document.getElementById('sorcery-link');
+        var copyLinkBtn = document.getElementById('copy-link-btn');
+        var copyMarkdownBtn = document.getElementById('copy-markdown-btn');
+
+        var currentSrcuriUrl = '';
+        var currentDisplayInfo = '';
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.classList.add('visible');
+            resultEl.classList.remove('visible');
+        }
+
+        function hideError() {
+            errorEl.classList.remove('visible');
+        }
+
+        function showResult(originalUrl, srcuriUrl, displayInfo) {
+            currentSrcuriUrl = srcuriUrl;
+            currentDisplayInfo = displayInfo;
+            originalLink.href = originalUrl;
+            originalLink.textContent = originalUrl;
+            sorceryLink.href = srcuriUrl;
+            sorceryLink.textContent = srcuriUrl;
+            resultEl.classList.add('visible');
+            hideError();
+        }
+
+        function detectProvider(url) {
+            var host = url.hostname;
+            var path = url.pathname;
+            if (host === 'github.dev' || host === 'codespaces.new') return 'github';
+            if (host === 'github.com' && path.startsWith('/codespaces/')) return 'github';
+            if (path.startsWith('/-/ide/')) return 'gitlab';
+            if (path.includes('/-/blob/') || path.includes('/-/tree/') || path.includes('/-/blame/') || path.includes('/-/raw/')) return 'gitlab';
+            if (path.includes('/src/branch/') || path.includes('/src/tag/') || path.includes('/src/commit/')) {
+                return host === 'codeberg.org' ? 'codeberg' : 'gitea';
+            }
+            if (path.includes('/_git/')) return 'azure';
+            if (path.includes('/blob/') || path.includes('/tree/') || path.includes('/blame/') || path.includes('/raw/')) return 'github';
+            if (host === 'github.com' || host.endsWith('.github.com')) return 'github';
+            if (host === 'gitlab.com' || host.includes('gitlab')) return 'gitlab';
+            if (host === 'bitbucket.org') return 'bitbucket';
+            if (host === 'gitea.com') return 'gitea';
+            if (host === 'codeberg.org') return 'codeberg';
+            if (host === 'dev.azure.com' || host.endsWith('.visualstudio.com')) return 'azure';
+            return null;
+        }
+
+        function extractGitHubLine(fragment) {
+            if (!fragment || !fragment.startsWith('L')) return null;
+            var rest = fragment.substring(1);
+            var numStr = rest.split('-')[0].replace(/^L/, '');
+            var num = parseInt(numStr, 10);
+            return isNaN(num) ? null : num;
+        }
+
+        function extractBitbucketLine(fragment) {
+            if (!fragment || !fragment.startsWith('lines-')) return null;
+            var rest = fragment.substring(6);
+            var numStr = rest.includes(':') ? rest.split(':')[0] : rest.split('-')[0];
+            var num = parseInt(numStr, 10);
+            return isNaN(num) ? null : num;
+        }
+
+        function parseGitHub(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+            if (host === 'codespaces.new') {
+                if (segments.length >= 2) {
+                    return { remote: 'github.com/' + segments[0] + '/' + segments[1], repoName: segments[1], refValue: null, filePath: null, line: null };
+                }
+                return null;
+            }
+            if (segments[0] === 'codespaces') {
+                if (segments.length >= 4 && segments[1] === 'new') {
+                    return { remote: 'github.com/' + segments[2] + '/' + segments[3], repoName: segments[3], refValue: null, filePath: null, line: null };
+                }
+                return null;
+            }
+            if (segments.length < 2) return null;
+            var owner = segments[0];
+            var repo = segments[1];
+            var remote = host + '/' + owner + '/' + repo;
+            if (segments.length === 2) {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+            var viewType = segments[2];
+            if (!['blob', 'tree', 'blame', 'raw', 'pull'].includes(viewType)) {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+            if (viewType === 'pull') {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+            var refValue = segments[3] || null;
+            var filePath = segments.length > 4 ? segments.slice(4).join('/') : null;
+            var line = extractGitHubLine(url.hash.substring(1));
+            return { remote: remote, repoName: repo, refValue: refValue, filePath: filePath, line: line };
+        }
+
+        function parseGitLab(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+            if (segments.length >= 5 && segments[0] === '-' && segments[1] === 'ide' && segments[2] === 'project') {
+                var group = segments[3];
+                var project = segments[4];
+                var remote = host + '/' + group + '/' + project;
+                if (segments.length >= 7 && segments[5] === 'edit') {
+                    var refValue = segments[6];
+                    var filePath = null;
+                    if (segments.length >= 9 && segments[7] === '-') {
+                        filePath = segments.slice(8).join('/') || null;
+                    } else if (segments.length === 8 && segments[7] === '-') {
+                        filePath = null;
+                    } else if (segments.length > 7 && segments[7] !== '-') {
+                        filePath = segments.slice(7).join('/');
+                    }
+                    return { remote: remote, repoName: project, refValue: refValue, filePath: filePath, line: extractGitHubLine(url.hash.substring(1)) };
+                }
+                return { remote: remote, repoName: project, refValue: null, filePath: null, line: null };
+            }
+            if (segments.length < 2) return null;
+            var grp = segments[0];
+            var proj = segments[1];
+            var rem = host + '/' + grp + '/' + proj;
+            if (segments.length === 2) {
+                return { remote: rem, repoName: proj, refValue: null, filePath: null, line: null };
+            }
+            var dashIdx = segments.indexOf('-');
+            if (dashIdx === -1) {
+                return { remote: rem, repoName: proj, refValue: null, filePath: null, line: null };
+            }
+            var vType = segments[dashIdx + 1];
+            if (!['blob', 'tree', 'blame', 'raw'].includes(vType)) {
+                return { remote: rem, repoName: proj, refValue: null, filePath: null, line: null };
+            }
+            var ref = segments[dashIdx + 2] || null;
+            var fp = segments.length > dashIdx + 3 ? segments.slice(dashIdx + 3).join('/') : null;
+            return { remote: rem, repoName: proj, refValue: ref, filePath: fp, line: extractGitHubLine(url.hash.substring(1)) };
+        }
+
+        function parseBitbucket(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+            if (segments.length < 2) return null;
+            var workspace = segments[0];
+            var repo = segments[1];
+            var remote = host + '/' + workspace + '/' + repo;
+            if (segments.length === 2 || segments[2] !== 'src') {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+            var refValue = segments[3] || null;
+            var filePath = segments.length > 4 ? segments.slice(4).join('/') : null;
+            return { remote: remote, repoName: repo, refValue: refValue, filePath: filePath, line: extractBitbucketLine(url.hash.substring(1)) };
+        }
+
+        function parseGitea(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+            if (segments.length < 2) return null;
+            var owner = segments[0];
+            var repo = segments[1];
+            var remote = host + '/' + owner + '/' + repo;
+            if (segments.length === 2 || segments[2] !== 'src') {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+            var refType = segments[3];
+            if (!['branch', 'tag', 'commit'].includes(refType)) {
+                return { remote: remote, repoName: repo, refValue: null, filePath: null, line: null };
+            }
+            var refValue = segments[4] || null;
+            var filePath = segments.length > 5 ? segments.slice(5).join('/') : null;
+            return { remote: remote, repoName: repo, refValue: refValue, filePath: filePath, line: extractGitHubLine(url.hash.substring(1)) };
+        }
+
+        function parseAzure(url) {
+            var host = url.hostname;
+            var segments = url.pathname.split('/').filter(function(s) { return s; });
+            var gitIdx = segments.indexOf('_git');
+            if (gitIdx === -1 || gitIdx + 1 >= segments.length) return null;
+            var repo = segments[gitIdx + 1];
+            var remotePath = segments.slice(0, gitIdx + 2).join('/');
+            var remote = host + '/' + remotePath;
+            var filePath = null;
+            var refValue = null;
+            var line = null;
+            var params = new URLSearchParams(url.search);
+            var pathParam = params.get('path');
+            if (pathParam) { filePath = pathParam.replace(/^\//, ''); }
+            var versionParam = params.get('version');
+            if (versionParam && versionParam.length >= 2) { refValue = versionParam.substring(2); }
+            var lineParam = params.get('line');
+            if (lineParam) { line = parseInt(lineParam, 10) || null; }
+            return { remote: remote, repoName: repo, refValue: refValue, filePath: filePath, line: line };
+        }
+
+        function buildSrcuriUrl(target) {
+            var url = 'https://srcuri.com/' + target.repoName + '/';
+            if (target.filePath) { url += target.filePath; }
+            if (target.line) { url += ':' + target.line; }
+            var queryParts = [];
+            if (target.refValue) { queryParts.push('branch=' + encodeURIComponent(target.refValue)); }
+            if (target.remote) { queryParts.push('remote=' + encodeURIComponent('https://' + target.remote)); }
+            if (queryParts.length > 0) { url += '?' + queryParts.join('&'); }
+            return url;
+        }
+
+        function parseUrl(urlStr) {
+            var normalized = urlStr.trim();
+            if (!normalized) { return { error: 'Paste a link to get started' }; }
+            if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+                normalized = 'https://' + normalized;
+            }
+            var url;
+            try { url = new URL(normalized); } catch (e) { return { error: "That doesn't look like a valid URL" }; }
+            var provider = detectProvider(url);
+            if (!provider) {
+                return { error: 'We support GitHub, GitLab, Bitbucket, Gitea, Codeberg, and Azure DevOps' };
+            }
+            var target;
+            switch (provider) {
+                case 'github': target = parseGitHub(url); break;
+                case 'gitlab': target = parseGitLab(url); break;
+                case 'bitbucket': target = parseBitbucket(url); break;
+                case 'gitea':
+                case 'codeberg': target = parseGitea(url); break;
+                case 'azure': target = parseAzure(url); break;
+            }
+            if (!target) { return { error: 'Could not parse URL for provider: ' + provider }; }
+            return { target: target, originalUrl: normalized };
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var result = parseUrl(input.value);
+            if (result.error) {
+                showError(result.error);
+                return;
+            }
+            var target = result.target;
+            var srcuriUrl = buildSrcuriUrl(target);
+            var displayInfo = target.repoName;
+            if (target.filePath) { displayInfo += '/' + target.filePath; }
+            if (target.line) { displayInfo += ':' + target.line; }
+            showResult(result.originalUrl, srcuriUrl, displayInfo);
+        });
+
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(function() {
+                var originalText = btn.innerHTML;
+                btn.classList.add('copied');
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20,6 9,17 4,12"/></svg> Copied!';
+                setTimeout(function() {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+
+        copyLinkBtn.addEventListener('click', function() {
+            copyToClipboard(currentSrcuriUrl, copyLinkBtn);
+        });
+
+        copyMarkdownBtn.addEventListener('click', function() {
+            var markdown = '[' + currentDisplayInfo + '](' + currentSrcuriUrl + ')';
+            copyToClipboard(markdown, copyMarkdownBtn);
+        });
+    })();
+    </script>
 </body>
 </html>
