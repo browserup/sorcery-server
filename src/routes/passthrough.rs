@@ -19,8 +19,10 @@ fn safe_href_url(url: &str) -> String {
     }
 }
 
-fn is_valid_ref_name(name: &str) -> bool {
+/// Validate branch names - allows chars found in real GitHub branch names
+fn is_valid_branch_name(name: &str) -> bool {
     !name.is_empty()
+        && name.len() <= 128
         && name.chars().all(|c| {
             c.is_ascii_alphanumeric()
                 || matches!(c, '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=')
@@ -28,6 +30,50 @@ fn is_valid_ref_name(name: &str) -> bool {
         && !name.starts_with('/')
         && !name.ends_with('/')
         && !name.contains("..")
+}
+
+/// Validate tag names - semver-focused subset of branch chars
+fn is_valid_tag_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 128
+        && name.chars().all(|c| {
+            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | '+')
+        })
+        && !name.starts_with('/')
+        && !name.ends_with('/')
+        && !name.contains("..")
+}
+
+/// Validate commit SHA - hex only (7-64 chars for short SHA to SHA-256)
+fn is_valid_commit_sha(sha: &str) -> bool {
+    let len = sha.len();
+    (7..=64).contains(&len) && sha.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Validate remote URL structure
+fn is_valid_remote_url(url: &str) -> bool {
+    let path = url
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .trim_start_matches("git@");
+
+    !path.is_empty()
+        && path.len() <= 256
+        && path.chars().all(|c| {
+            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ':' | '@')
+        })
+        && !path.contains("..")
+        && !path.contains("//")
+        && !path.starts_with('/')
+}
+
+/// Validate workspace/repo names - project name format
+fn is_valid_workspace_name(name: &str) -> bool {
+    !name.is_empty()
+        && name.len() <= 128
+        && name.chars().all(|c| {
+            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')
+        })
 }
 
 #[derive(Deserialize)]
@@ -139,27 +185,74 @@ fn passthrough_redirect(remote_url: &str) -> Response {
 
 /// Serve the mirror page for srcuri:// protocol redirect
 fn serve_mirror_page(path: &str, params: MirrorQuery) -> Response {
+    // Validate branch name if provided
     if let Some(ref branch) = params.branch {
-        if !is_valid_ref_name(branch) {
-            return render_invalid_ref_error(branch);
+        if !is_valid_branch_name(branch) {
+            return render_invalid_ref_error("branch", branch);
+        }
+    }
+    // Validate remote URL if provided
+    if let Some(ref remote) = params.remote {
+        if !is_valid_remote_url(remote) {
+            return render_invalid_param_error("remote", remote);
         }
     }
     let target = parse_mirror_path(path, params);
+    // Validate extracted repo name (workspace)
+    if !target.repo_name.is_empty() && !target.is_absolute && !is_valid_workspace_name(&target.repo_name) {
+        return render_invalid_param_error("workspace", &target.repo_name);
+    }
     render_mirror_page(&target)
 }
 
-fn render_invalid_ref_error(ref_name: &str) -> Response {
+fn render_invalid_ref_error(param_type: &str, ref_name: &str) -> Response {
     let safe_display: String = ref_name
         .chars()
         .take(100)
         .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=' | ' ') { c } else { '?' })
         .collect();
 
+    let allowed_chars = match param_type {
+        "branch" => "letters, numbers, and - _ . / @ , ( ) + # =",
+        "tag" => "letters, numbers, and - _ . / +",
+        _ => "letters, numbers, and - _ . / @ , ( ) + # =",
+    };
+
     let template = ErrorTemplate {
         message: format!(
-            "Invalid branch name: \"{}\". Branch names may only contain letters, numbers, and - _ . / @ , ( ) + # =",
+            "Invalid {} name: \"{}\". {} names may only contain {}",
+            param_type, safe_display, param_type, allowed_chars
+        ),
+        url: String::new(),
+    };
+    Html(template.render().unwrap_or_else(|e| format!("Template error: {}", e))).into_response()
+}
+
+fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
+    let safe_display: String = value
+        .chars()
+        .take(100)
+        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ':' | '@' | ' ') { c } else { '?' })
+        .collect();
+
+    let message = match param_type {
+        "remote" => format!(
+            "Invalid remote URL: \"{}\". Remote URLs may only contain letters, numbers, and - _ . / : @",
             safe_display
         ),
+        "workspace" => format!(
+            "Invalid workspace name: \"{}\". Workspace names may only contain letters, numbers, and - _ .",
+            safe_display
+        ),
+        "commit" => format!(
+            "Invalid commit SHA: \"{}\". Commit SHAs must be 7-64 hexadecimal characters (0-9, a-f)",
+            safe_display
+        ),
+        _ => format!("Invalid {}: \"{}\"", param_type, safe_display),
+    };
+
+    let template = ErrorTemplate {
+        message,
         url: String::new(),
     };
     Html(template.render().unwrap_or_else(|e| format!("Template error: {}", e))).into_response()

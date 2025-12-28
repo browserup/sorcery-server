@@ -265,6 +265,135 @@ async fn test_branch_with_special_chars_is_url_encoded() {
     );
 }
 
+// Security validation tests
+
+#[tokio::test]
+async fn test_invalid_branch_shell_metachar_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Semicolon is a shell metacharacter - should be rejected
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:10?branch=main;rm%20-rf")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK); // Error page returns 200
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid branch name"));
+}
+
+#[tokio::test]
+async fn test_invalid_branch_path_traversal_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:10?branch=../../../etc/passwd")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid branch name"));
+}
+
+#[tokio::test]
+async fn test_invalid_remote_shell_metachar_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:10?remote=github.com/owner/repo;whoami")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid remote URL"));
+}
+
+#[tokio::test]
+async fn test_invalid_remote_path_traversal_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:10?remote=github.com/../../../etc/passwd")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid remote URL"));
+}
+
+#[tokio::test]
+async fn test_invalid_workspace_shell_metachar_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    // Workspace with backtick should be rejected
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/my%60repo/file.rs:10")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid workspace name"));
+}
+
+#[tokio::test]
+async fn test_valid_branch_accepted() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/file.rs:10?branch=feature/add-tests")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    // Should NOT contain error message
+    assert!(!html.contains("Invalid"));
+    // Should contain the srcuri URL
+    assert!(html.contains("srcuri://"));
+}
+
 fn create_test_app() -> axum::Router {
     use std::path::PathBuf;
     use std::sync::Arc;
