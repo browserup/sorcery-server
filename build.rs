@@ -52,7 +52,7 @@ fn main() {
 
     for (name, hash) in &hashes {
         output.push_str(&format!(
-            "pub const {}: &str = \"sha256-{}\";\n",
+            "pub const {}: &str = \"'sha256-{}'\";\n",
             name, hash
         ));
     }
