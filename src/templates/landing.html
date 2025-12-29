@@ -9,6 +9,7 @@
     <meta property="og:description" content="Create shareable code links that open directly in your editor. Free, open source, no sign-up required.">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Sorcery">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
@@ -488,13 +489,14 @@
         <div class="header-inner">
             <a href="/" class="header-brand">
                 <svg viewBox="0 0 512 512" fill="none">
-                    <rect x="70" y="350" width="200" height="45" rx="8" transform="rotate(-45 70 350)" fill="#1a1a1a"/>
-                    <path d="M330 60 L350 150 L440 170 L350 190 L330 280 L310 190 L220 170 L310 150 Z" fill="url(#sparkleGradient)"/>
+                    <polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/>
+                    <polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#starGradient)"/>
                     <defs>
-                        <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <radialGradient id="starGradient" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse">
                             <stop offset="0%" stop-color="#9333ea"/>
-                            <stop offset="100%" stop-color="#c026d3"/>
-                        </linearGradient>
+                            <stop offset="70%" stop-color="#c026d3"/>
+                            <stop offset="100%" stop-color="#f59e0b"/>
+                        </radialGradient>
                     </defs>
                 </svg>
                 <span>Sorcery</span>
