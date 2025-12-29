@@ -22,3 +22,6 @@ Cargo.lock.bak
 
 # Local cargo config (for local path overrides during development)
 .cargo/
+
+# Kamal secrets
+.kamal/secrets
