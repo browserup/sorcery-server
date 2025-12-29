@@ -18,7 +18,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
 httpdate = "1"
 # For local development, override with: cargo build --config 'patch.crates-io.srcuri-core.path="../sorcery-desktop/srcuri-core"'
-srcuri-core = { git = "https://github.com/sorcery-app/sorcery-desktop", branch = "main" }
+srcuri-core = { git = "https://github.com/browserup/sorcery-desktop", branch = "main" }
 
 [build-dependencies]
 sha2 = "0.10"
