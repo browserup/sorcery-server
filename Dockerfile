@@ -6,8 +6,8 @@ RUN apk add --no-cache musl-dev git
 
 WORKDIR /build
 
-# Copy only Cargo files first for better layer caching
-COPY Cargo.toml Cargo.lock ./
+# Copy build files
+COPY Cargo.toml Cargo.lock build.rs askama.toml ./
 COPY src ./src
 
 # Build the application
