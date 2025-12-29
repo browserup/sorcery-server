@@ -1,0 +1,33 @@
+service: sorcery-server
+image: ghcr.io/browserup/sorcery-server
+
+builder:
+  arch: amd64
+
+servers:
+  web:
+    hosts:
+      - 51.81.202.98
+
+proxy:
+  ssl: true
+  hosts:
+    - srcuri.com
+    - "*.srcuri.com"
+  app_port: 8080
+  healthcheck:
+    path: /health
+
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+env:
+  clear:
+    PORT: "8080"
+    RUST_LOG: "sorcery_server=info"
+    TENANTS_DIR: "/app/tenants"
+    BASE_DOMAIN: "srcuri.com"
