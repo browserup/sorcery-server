@@ -1,5 +1,5 @@
 service: sorcery-server
-image: ghcr.io/browserup/sorcery-server
+image: browserup/sorcery-server
 
 builder:
   arch: amd64
@@ -11,9 +11,7 @@ servers:
 
 proxy:
   ssl: true
-  hosts:
-    - srcuri.com
-    - "*.srcuri.com"
+  host: srcuri.com
   app_port: 8080
   healthcheck:
     path: /health
