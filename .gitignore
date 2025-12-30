@@ -25,3 +25,6 @@ Cargo.lock.bak
 
 # Kamal secrets
 .kamal/secrets
+
+# Claude local settings
+.claude/settings.local.json
