@@ -175,6 +175,8 @@ async fn test_csp_header_present() {
     let csp_str = csp.to_str().unwrap();
     assert!(csp_str.contains("script-src"), "CSP should include script-src");
     assert!(csp_str.contains("sha256-"), "CSP should include script hashes");
+    assert!(csp_str.contains("style-src"), "CSP should include style-src");
+    assert!(!csp_str.contains("unsafe-inline"), "CSP should not use unsafe-inline");
     assert!(csp_str.contains("object-src 'none'"), "CSP should block plugins");
     assert!(csp_str.contains("frame-ancestors 'none'"), "CSP should prevent clickjacking");
 }

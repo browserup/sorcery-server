@@ -16,7 +16,7 @@ pub async fn csp_middleware(request: Request<Body>, next: Next) -> Response<Body
 
     // Build the CSP header value
     // - script-src: Only allow scripts with matching hashes (computed at build time)
-    // - style-src: Allow inline styles (lower risk than scripts)
+    // - style-src: Only allow styles with matching hashes (computed at build time)
     // - object-src: Block all plugins (Flash, Java, etc.)
     // - base-uri: Prevent base tag injection
     // - frame-ancestors: Prevent clickjacking
@@ -24,17 +24,20 @@ pub async fn csp_middleware(request: Request<Body>, next: Next) -> Response<Body
     let csp_value = format!(
         "default-src 'self'; \
          script-src {}; \
-         style-src 'self' 'unsafe-inline'; \
+         style-src 'self' {}; \
          object-src 'none'; \
          base-uri 'self'; \
          frame-ancestors 'none'; \
          form-action 'self'",
-        script_src_hashes()
+        script_src_hashes(),
+        style_src_hashes()
     );
 
     response.headers_mut().insert(
         header::CONTENT_SECURITY_POLICY,
-        csp_value.parse().unwrap(),
+        csp_value
+            .parse()
+            .expect("CSP header value should always be valid ASCII"),
     );
 
     response
