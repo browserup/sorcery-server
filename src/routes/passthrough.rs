@@ -5,6 +5,7 @@ use axum::{
     response::{Html, Redirect, IntoResponse, Response},
 };
 use serde::Deserialize;
+use std::fmt::Write;
 use crate::parsing::{parse_remote_url, extract_path_line_suffix, ParseError, SrcuriTarget};
 use super::templates::{MirrorTemplate, ErrorTemplate};
 
@@ -326,7 +327,7 @@ fn render_mirror_page(target: &SrcuriTarget) -> Response {
         s
     };
     if let Some(line) = target.line {
-        srcuri.push_str(&format!(":{}", line));
+        let _ = write!(srcuri, ":{}", line);
     }
 
     let mut query_parts = Vec::new();
