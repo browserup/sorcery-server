@@ -1145,7 +1145,6 @@ dependencies = [
 [[package]]
 name = "srcuri-core"
 version = "0.1.0"
-source = "git+https://github.com/browserup/sorcery-desktop?branch=main#0c22b202a4ea919523be28c69ff38e4553e6f5ff"
 dependencies = [
  "url",
 ]
@@ -1732,7 +1731,3 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[patch.unused]]
-name = "srcuri-core"
-version = "0.1.0"
