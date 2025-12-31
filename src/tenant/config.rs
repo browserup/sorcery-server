@@ -9,8 +9,8 @@ pub struct TenantConfig {
 }
 
 impl TenantConfig {
-    pub fn load_from_file(path: PathBuf) -> Result<Self, std::io::Error> {
-        let content = std::fs::read_to_string(path)?;
+    pub async fn load_from_file(path: PathBuf) -> Result<Self, std::io::Error> {
+        let content = tokio::fs::read_to_string(path).await?;
         serde_json::from_str(&content).map_err(|e| {
             std::io::Error::new(std::io::ErrorKind::InvalidData, e)
         })

@@ -19,5 +19,5 @@ pub async fn wellknown_handler(
 
     let subdomain = crate::tenant::TenantManager::extract_subdomain(host);
     let config = state.tenant_manager.get_config(&subdomain).await;
-    Json(config)
+    Json((*config).clone())
 }
