@@ -16,7 +16,10 @@ use tower_http::trace::TraceLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use sorcery_server::{AppState, csp, routes, tenant, subdomain::{self, SubdomainMode}};
+use sorcery_server::{AppState, csp, routes, tenant, subdomain::{self, SubdomainMode}, strip_port};
+
+const ONE_DAY_SECS: u64 = 86_400;
+const NINETY_DAYS_SECS: u64 = 7_776_000;
 
 #[tokio::main]
 async fn main() {
@@ -140,7 +143,7 @@ async fn health_handler() -> &'static str {
 
 async fn serve_app_js(Host(host): Host) -> Response<Body> {
     let content = include_str!("static/app.js");
-    let host_without_port = host.split(':').next().unwrap_or(&host);
+    let host_without_port = strip_port(&host);
     let is_localhost = host_without_port == "localhost" || host_without_port == "127.0.0.1";
 
     let mut builder = Response::builder()
@@ -149,7 +152,7 @@ async fn serve_app_js(Host(host): Host) -> Response<Body> {
 
     if !is_localhost {
         let expires_time = SystemTime::now()
-            .checked_add(Duration::from_secs(86400))
+            .checked_add(Duration::from_secs(ONE_DAY_SECS))
             .unwrap_or(SystemTime::now());
         let expires_http = HttpDate::from(expires_time).to_string();
         builder = builder
@@ -157,13 +160,15 @@ async fn serve_app_js(Host(host): Host) -> Response<Body> {
             .header(header::EXPIRES, expires_http);
     }
 
-    builder.body(Body::from(content)).unwrap()
+    builder
+        .body(Body::from(content))
+        .expect("static response body should always be valid")
 }
 
 const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/><polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/><defs><radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#9333ea"/><stop offset="70%" stop-color="#c026d3"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs></svg>"##;
 
 async fn serve_favicon(Host(host): Host) -> Response<Body> {
-    let host_without_port = host.split(':').next().unwrap_or(&host);
+    let host_without_port = strip_port(&host);
     let is_localhost = host_without_port == "localhost" || host_without_port == "127.0.0.1";
 
     let mut builder = Response::builder()
@@ -172,7 +177,7 @@ async fn serve_favicon(Host(host): Host) -> Response<Body> {
 
     if !is_localhost {
         let expires_time = SystemTime::now()
-            .checked_add(Duration::from_secs(7776000))
+            .checked_add(Duration::from_secs(NINETY_DAYS_SECS))
             .unwrap_or(SystemTime::now());
         let expires_http = HttpDate::from(expires_time).to_string();
         builder = builder
@@ -180,7 +185,9 @@ async fn serve_favicon(Host(host): Host) -> Response<Body> {
             .header(header::EXPIRES, expires_http);
     }
 
-    builder.body(Body::from(FAVICON_SVG)).unwrap()
+    builder
+        .body(Body::from(FAVICON_SVG))
+        .expect("static response body should always be valid")
 }
 
 async fn serve_favicon_svg(Host(host): Host) -> Response<Body> {
