@@ -1,4 +1,5 @@
 use axum::http::Uri;
+use crate::strip_port;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SubdomainMode {
@@ -18,7 +19,7 @@ pub fn detect_mode(host: &str, uri: &Uri) -> SubdomainMode {
 }
 
 fn is_localhost(host: &str) -> bool {
-    let host_without_port = host.split(':').next().unwrap_or(host);
+    let host_without_port = strip_port(host);
     host_without_port == "localhost"
         || host_without_port == "127.0.0.1"
         || host_without_port == "::1"
@@ -39,7 +40,7 @@ fn check_query_override(uri: &Uri) -> Option<SubdomainMode> {
 }
 
 fn detect_mode_from_host(host: &str) -> SubdomainMode {
-    let host_without_port = host.split(':').next().unwrap_or(host);
+    let host_without_port = strip_port(host);
 
     let parts: Vec<&str> = host_without_port.split('.').collect();
 

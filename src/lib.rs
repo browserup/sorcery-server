@@ -11,3 +11,7 @@ pub struct AppState {
     pub tenant_manager: Arc<tenant::TenantManager>,
     pub base_domain: String,
 }
+
+pub fn strip_port(host: &str) -> &str {
+    host.split(':').next().unwrap_or(host)
+}
