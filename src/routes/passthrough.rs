@@ -59,15 +59,33 @@ fn is_valid_workspace_name(name: &str) -> bool {
         })
 }
 
-/// Validate file paths - safe characters only, no shell metacharacters
-/// Allows: alphanumeric, standard path chars (-_./), space, @ (npm scopes), + (C++ files)
+/// Validate file paths - safe characters only, no shell metacharacters.
+/// Allows: alphanumeric, standard path chars (-_./), space, @ (npm scopes), + (C++ files),
+/// parentheses, and square brackets. A leading '~' is permitted for home-relative paths.
 fn is_valid_file_path(path: &str) -> bool {
-    !path.is_empty()
-        && path.len() <= 1024
-        && path.chars().all(|c| {
-            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ' ' | '@' | '+')
-        })
-        && !path.contains("..")
+    if path.is_empty() || path.len() > 1024 {
+        return false;
+    }
+
+    for (idx, ch) in path.chars().enumerate() {
+        if idx == 0 && ch == '~' {
+            continue;
+        }
+
+        if ch == '~' {
+            return false;
+        }
+
+        if ch.is_ascii_alphanumeric()
+            || matches!(ch, '-' | '_' | '.' | '/' | ' ' | '@' | '+' | '(' | ')' | '[' | ']')
+        {
+            continue;
+        }
+
+        return false;
+    }
+
+    !path.contains("..")
 }
 
 #[derive(Deserialize)]
@@ -249,7 +267,7 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
             safe_display
         ),
         "path" => format!(
-            "Invalid file path: \"{}\". Paths may only contain letters, numbers, and - _ . / @ + (space)",
+            "Invalid file path: \"{}\". Paths may only contain letters, numbers, and - _ . / @ + (space) ( ) [ ] with an optional leading ~",
             safe_display
         ),
         _ => format!("Invalid {}: \"{}\"", param_type, safe_display),

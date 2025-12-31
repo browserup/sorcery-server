@@ -617,6 +617,29 @@ async fn test_file_path_shell_metachar_rejected() {
 }
 
 #[tokio::test]
+async fn test_file_path_parentheses_and_brackets_allowed() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/Project%20(1)/src/file[0].rs:7")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(
+        html.contains("srcuri://myrepo/Project (1)/src/file[0].rs:7"),
+        "Expected path with parentheses/brackets to be accepted"
+    );
+}
+
+#[tokio::test]
 async fn test_file_path_quotes_rejected() {
     use http_body_util::BodyExt;
 
@@ -647,6 +670,26 @@ async fn test_file_path_backtick_rejected() {
         .oneshot(
             Request::builder()
                 .uri("/myrepo/file%60whoami%60.rs")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+    assert!(html.contains("Invalid file path"));
+}
+
+#[tokio::test]
+async fn test_file_path_mid_tilde_rejected() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/src/foo~bar.rs")
                 .body(Body::empty())
                 .unwrap(),
         )
