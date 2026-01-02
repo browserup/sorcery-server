@@ -68,7 +68,7 @@ mod tests {
     use super::*;
 
     fn uri(s: &str) -> Uri {
-        s.parse().unwrap()
+        s.parse().expect("valid URI for test")
     }
 
     #[test]
