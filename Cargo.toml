@@ -16,10 +16,10 @@ askama = "0.12"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
+percent-encoding = "2.3"
 httpdate = "1"
 # For local development, override with: cargo build --config 'patch.crates-io.srcuri-core.path="../sorcery-desktop/srcuri-core"'
 srcuri-core = { git = "https://github.com/browserup/sorcery-desktop", branch = "main" }
-percent-encoding = "2.3.2"
 
 [build-dependencies]
 sha2 = "0.10"

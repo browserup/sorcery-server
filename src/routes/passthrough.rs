@@ -4,7 +4,6 @@ use axum::{
     http::{Uri, header, HeaderValue},
     response::{Html, Redirect, IntoResponse, Response},
 };
-use percent_encoding::percent_decode_str;
 use serde::Deserialize;
 use std::fmt::Write;
 use crate::parsing::{parse_remote_url, extract_path_line_suffix, ParseError, SrcuriTarget};
@@ -271,7 +270,9 @@ fn passthrough_redirect(remote_url: &str) -> Response {
 /// Serve the mirror page for srcuri:// protocol redirect
 fn serve_mirror_page(path: &str, mode: UrlMode, params: MirrorQuery) -> Response {
     // URL-decode the path (converts %20 to space, %5B to [, etc.)
-    let decoded_path = percent_decode_str(path).decode_utf8_lossy().into_owned();
+    let decoded_path = percent_encoding::percent_decode_str(path)
+        .decode_utf8_lossy()
+        .into_owned();
 
     // Validate branch name if provided
     if let Some(ref branch) = params.branch {
