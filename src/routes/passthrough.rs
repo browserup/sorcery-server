@@ -4,10 +4,57 @@ use axum::{
     http::{Uri, header, HeaderValue},
     response::{Html, Redirect, IntoResponse, Response},
 };
+use percent_encoding::percent_decode_str;
 use serde::Deserialize;
 use std::fmt::Write;
 use crate::parsing::{parse_remote_url, extract_path_line_suffix, ParseError, SrcuriTarget};
 use super::templates::{MirrorTemplate, ErrorTemplate};
+
+/// URL mode based on authority (first path segment)
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum UrlMode {
+    /// srcuri.com/myrepo/... → srcuri://myrepo/...
+    ImplicitWorkspace,
+    /// srcuri.com/workspace/myrepo/... → srcuri://workspace/myrepo/...
+    ExplicitWorkspace,
+    /// srcuri.com/match/... → srcuri://match/...
+    Match,
+    /// srcuri.com/abs/... → srcuri://abs/...
+    Absolute,
+    /// srcuri.com/ext/https/... → srcuri://ext/https/...
+    External,
+}
+
+/// Reserved authority tokens that cannot be used as workspace names
+const RESERVED_AUTHORITIES: [&str; 4] = ["workspace", "match", "abs", "ext"];
+
+/// Detect URL mode from the first path segment
+fn detect_url_mode(path: &str) -> (UrlMode, &str) {
+    let normalized = path.trim_start_matches('/');
+
+    // Get first segment
+    let first_segment = normalized.split('/').next().unwrap_or("");
+
+    match first_segment {
+        "workspace" => {
+            let rest = normalized.strip_prefix("workspace/").unwrap_or(normalized);
+            (UrlMode::ExplicitWorkspace, rest)
+        }
+        "match" => {
+            let rest = normalized.strip_prefix("match/").unwrap_or(normalized);
+            (UrlMode::Match, rest)
+        }
+        "abs" => {
+            let rest = normalized.strip_prefix("abs/").unwrap_or(normalized);
+            (UrlMode::Absolute, rest)
+        }
+        "ext" => {
+            let rest = normalized.strip_prefix("ext/").unwrap_or(normalized);
+            (UrlMode::External, rest)
+        }
+        _ => (UrlMode::ImplicitWorkspace, normalized),
+    }
+}
 
 /// Sanitize URL for use in href attribute - only allow http/https protocols
 /// Blocks javascript:, data:, vbscript: and other dangerous protocols
@@ -57,6 +104,8 @@ fn is_valid_workspace_name(name: &str) -> bool {
         && name.chars().all(|c| {
             c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')
         })
+        // Reserved authorities cannot be used as workspace names
+        && !RESERVED_AUTHORITIES.contains(&name.to_lowercase().as_str())
 }
 
 /// Validate file paths - safe characters only, no shell metacharacters.
@@ -108,19 +157,31 @@ pub async fn root_handler(Query(params): Query<PassthroughQuery>) -> Response {
 }
 
 /// Catch-all handler for path-based URLs
-/// Detects whether path is a provider URL (passthrough) or workspace path (mirror)
+/// Detects URL mode from authority and routes accordingly
 pub async fn catchall_handler(
     uri: Uri,
     Query(params): Query<MirrorQuery>,
 ) -> Response {
     let path = uri.path().to_string();
-    // Check if this looks like a provider URL - serve HTML+JS interstitial
-    // (must be client-side to preserve URL fragments like #L42)
-    if is_provider_path(&path) {
-        serve_provider_page()
-    } else {
-        // It's a workspace mirror path - serve the mirror page
-        serve_mirror_page(&path, params).into_response()
+
+    // Detect URL mode from first path segment
+    let (mode, _rest_path) = detect_url_mode(&path);
+
+    match mode {
+        UrlMode::External => {
+            // External mode: srcuri.com/ext/https/github.com/...
+            // Serve provider interstitial page (client-side to preserve fragments)
+            serve_provider_page()
+        }
+        UrlMode::Absolute | UrlMode::Match | UrlMode::ExplicitWorkspace | UrlMode::ImplicitWorkspace => {
+            // Check if implicit workspace path looks like a provider URL
+            if mode == UrlMode::ImplicitWorkspace && is_provider_path(&path) {
+                serve_provider_page()
+            } else {
+                // Serve mirror page with appropriate mode
+                serve_mirror_page(&path, mode, params).into_response()
+            }
+        }
     }
 }
 
@@ -196,7 +257,10 @@ fn passthrough_redirect(remote_url: &str) -> Response {
 }
 
 /// Serve the mirror page for srcuri:// protocol redirect
-fn serve_mirror_page(path: &str, params: MirrorQuery) -> Response {
+fn serve_mirror_page(path: &str, mode: UrlMode, params: MirrorQuery) -> Response {
+    // URL-decode the path (converts %20 to space, %5B to [, etc.)
+    let decoded_path = percent_decode_str(path).decode_utf8_lossy().into_owned();
+
     // Validate branch name if provided
     if let Some(ref branch) = params.branch {
         if !is_valid_branch_name(branch) {
@@ -209,9 +273,12 @@ fn serve_mirror_page(path: &str, params: MirrorQuery) -> Response {
             return render_invalid_param_error("remote", remote);
         }
     }
-    let target = parse_mirror_path(path, params);
-    // Validate extracted repo name (workspace)
-    if !target.repo_name.is_empty() && !target.is_absolute && !is_valid_workspace_name(&target.repo_name) {
+    let target = parse_mirror_path(&decoded_path, mode, params);
+    // Validate extracted repo name (workspace) - only for workspace modes
+    if !target.repo_name.is_empty()
+        && matches!(mode, UrlMode::ImplicitWorkspace | UrlMode::ExplicitWorkspace)
+        && !is_valid_workspace_name(&target.repo_name)
+    {
         return render_invalid_param_error("workspace", &target.repo_name);
     }
     // Validate file path (length limit, path traversal)
@@ -220,7 +287,7 @@ fn serve_mirror_page(path: &str, params: MirrorQuery) -> Response {
             return render_invalid_param_error("path", file_path);
         }
     }
-    render_mirror_page(&target)
+    render_mirror_page_with_mode(&target, mode)
 }
 
 fn render_invalid_ref_error(param_type: &str, ref_name: &str) -> Response {
@@ -280,21 +347,17 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
     Html(template.render().unwrap_or_else(|e| format!("Template error: {}", e))).into_response()
 }
 
-/// Parse a mirror mode path like "repo/src/lib.rs:42" or "//absolute/path.rs:42"
-fn parse_mirror_path(path: &str, params: MirrorQuery) -> SrcuriTarget {
-    // Check for absolute path: starts with // (after the initial / from URI)
-    // e.g., URI path "///Users/foo/file.txt" arrives as "///Users/foo/file.txt"
-    // We need 3 slashes total for absolute paths: first slash is the URI path separator,
-    // next two indicate "absolute path" in srcuri:// protocol
-    let trimmed_once = path.strip_prefix('/').unwrap_or(path);
-    let is_absolute = trimmed_once.starts_with('/');
+/// Parse a mirror mode path based on detected URL mode
+fn parse_mirror_path(path: &str, mode: UrlMode, params: MirrorQuery) -> SrcuriTarget {
+    let trimmed = path.trim_start_matches('/');
 
-    let clean_path = if is_absolute {
-        // Absolute path: keep one leading slash
-        trimmed_once
-    } else {
-        // Workspace path: no leading slashes
-        trimmed_once
+    // Strip authority prefix if present
+    let clean_path = match mode {
+        UrlMode::ExplicitWorkspace => trimmed.strip_prefix("workspace/").unwrap_or(trimmed),
+        UrlMode::Match => trimmed.strip_prefix("match/").unwrap_or(trimmed),
+        UrlMode::Absolute => trimmed.strip_prefix("abs/").unwrap_or(trimmed),
+        UrlMode::External => trimmed.strip_prefix("ext/").unwrap_or(trimmed),
+        UrlMode::ImplicitWorkspace => trimmed,
     };
 
     // Extract line number from :N suffix
@@ -303,47 +366,96 @@ fn parse_mirror_path(path: &str, params: MirrorQuery) -> SrcuriTarget {
     // Normalize remote (strip https:// if present, accept both formats)
     let remote = normalize_remote(params.remote);
 
-    if is_absolute {
-        // Absolute path: no workspace, full path goes in file_path
-        SrcuriTarget {
-            remote,
-            repo_name: String::new(),
-            ref_value: params.branch,
-            file_path: Some(path_without_line.to_string()),
-            line,
-            is_absolute: true,
+    match mode {
+        UrlMode::Absolute => {
+            // Absolute path: no workspace, full path goes in file_path
+            SrcuriTarget {
+                remote,
+                repo_name: String::new(),
+                ref_value: params.branch,
+                file_path: Some(path_without_line.to_string()),
+                line,
+                is_absolute: true,
+            }
         }
-    } else {
-        // Split into workspace/repo and file path
-        let parts: Vec<&str> = path_without_line.splitn(2, '/').collect();
-        let repo_name = parts.first().unwrap_or(&"").to_string();
-        let file_path = parts.get(1).map(|s| s.to_string());
+        UrlMode::Match => {
+            // Match mode: path is a search pattern, no workspace extraction
+            SrcuriTarget {
+                remote,
+                repo_name: String::new(),
+                ref_value: params.branch,
+                file_path: Some(path_without_line.to_string()),
+                line,
+                is_absolute: false,
+            }
+        }
+        UrlMode::External => {
+            // External mode: path is provider URL (https/github.com/...)
+            SrcuriTarget {
+                remote,
+                repo_name: String::new(),
+                ref_value: params.branch,
+                file_path: Some(path_without_line.to_string()),
+                line,
+                is_absolute: false,
+            }
+        }
+        UrlMode::ImplicitWorkspace | UrlMode::ExplicitWorkspace => {
+            // Workspace modes: split into workspace/repo and file path
+            let parts: Vec<&str> = path_without_line.splitn(2, '/').collect();
+            let repo_name = parts.first().unwrap_or(&"").to_string();
+            let file_path = parts.get(1).map(|s| s.to_string());
 
-        SrcuriTarget {
-            remote,
-            repo_name,
-            ref_value: params.branch,
-            file_path,
-            line,
-            is_absolute: false,
+            SrcuriTarget {
+                remote,
+                repo_name,
+                ref_value: params.branch,
+                file_path,
+                line,
+                is_absolute: false,
+            }
         }
     }
 }
 
-fn render_mirror_page(target: &SrcuriTarget) -> Response {
-    // Build srcuri:// URL
-    let mut srcuri = if target.is_absolute {
-        // Absolute path: srcuri:///path/to/file
-        let path = target.file_path.as_deref().unwrap_or("");
-        format!("srcuri://{}", path)
-    } else {
-        // Workspace path: srcuri://workspace/path/to/file
-        let mut s = format!("srcuri://{}/", target.repo_name);
-        if let Some(ref path) = target.file_path {
-            s.push_str(path);
+fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Response {
+    // Build srcuri:// URL with authority-based mode detection (v1 spec)
+    let mut srcuri = match mode {
+        UrlMode::Absolute => {
+            // Absolute path: srcuri://abs/path/to/file
+            let path = target.file_path.as_deref().unwrap_or("");
+            format!("srcuri://abs/{}", path)
         }
-        s
+        UrlMode::Match => {
+            // Match mode: srcuri://match/path/to/file
+            let path = target.file_path.as_deref().unwrap_or("");
+            format!("srcuri://match/{}", path)
+        }
+        UrlMode::External => {
+            // External mode: srcuri://ext/path (preserved from URL)
+            let path = target.file_path.as_deref().unwrap_or("");
+            format!("srcuri://ext/{}", path)
+        }
+        UrlMode::ExplicitWorkspace => {
+            // Explicit workspace: srcuri://workspace/repo/path
+            let mut s = format!("srcuri://workspace/{}", target.repo_name);
+            if let Some(ref path) = target.file_path {
+                s.push('/');
+                s.push_str(path);
+            }
+            s
+        }
+        UrlMode::ImplicitWorkspace => {
+            // Implicit workspace: srcuri://repo/path (authority IS workspace)
+            let mut s = format!("srcuri://{}", target.repo_name);
+            if let Some(ref path) = target.file_path {
+                s.push('/');
+                s.push_str(path);
+            }
+            s
+        }
     };
+
     if let Some(line) = target.line {
         let _ = write!(srcuri, ":{}", line);
     }
@@ -351,9 +463,6 @@ fn render_mirror_page(target: &SrcuriTarget) -> Response {
     let mut query_parts = Vec::new();
     if let Some(ref branch) = target.ref_value {
         // URL-encode branch names to handle special characters like + # =
-        // Examples: "inputprocessing/c++" becomes "inputprocessing%2Fc%2B%2B"
-        //           "#pr470" becomes "%23pr470"
-        // Without encoding, + means space and # truncates at fragment delimiter.
         let encoded: String = url::form_urlencoded::byte_serialize(branch.as_bytes()).collect();
         query_parts.push(format!("branch={}", encoded));
     }
@@ -374,8 +483,10 @@ fn render_mirror_page(target: &SrcuriTarget) -> Response {
     // Generate OG description
     let og_description = if !display_path.is_empty() {
         format!("{}{} on {} branch", display_path, display_line, display_branch)
-    } else {
+    } else if !target.repo_name.is_empty() {
         format!("{} repository", target.repo_name)
+    } else {
+        "Code reference".to_string()
     };
 
     // Generate view URL for remote provider (GitHub, GitLab, etc.)

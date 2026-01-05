@@ -545,6 +545,7 @@ async fn test_line_number_numeric_extracted() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     // Should have :42 extracted as line number, separate from filename
+    // Uses authority-based format (v1 spec) - workspace IS the authority
     assert!(
         html.contains("srcuri://myrepo/file.rs:42"),
         "Numeric line suffix should be extracted. HTML: {}",
@@ -633,9 +634,11 @@ async fn test_file_path_parentheses_and_brackets_allowed() {
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let html = String::from_utf8(body.to_vec()).unwrap();
+    // Uses authority-based format (v1 spec) - workspace IS the authority
     assert!(
         html.contains("srcuri://myrepo/Project (1)/src/file[0].rs:7"),
-        "Expected path with parentheses/brackets to be accepted"
+        "Expected path with parentheses/brackets to be accepted. HTML: {}",
+        &html[..1000.min(html.len())]
     );
 }
 

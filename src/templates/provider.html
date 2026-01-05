@@ -485,11 +485,12 @@
             };
         }
 
-        // Build srcuri:// URL from parsed target
+        // Build srcuri:// URL from parsed target (v1 spec with authority-based mode)
         function buildSrcuriUrl(target) {
-            var url = 'srcuri://' + target.repoName + '/';
+            // Use authority-based format: srcuri://workspace/path (workspace IS authority)
+            var url = 'srcuri://' + target.repoName;
             if (target.filePath) {
-                url += target.filePath;
+                url += '/' + target.filePath;
             }
             if (target.line) {
                 url += ':' + target.line;

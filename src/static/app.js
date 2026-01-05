@@ -70,8 +70,10 @@
         let protocolUrl;
 
         if (parsed.isAbsolute) {
-            protocolUrl = `srcuri:///${parsed.path}`;
+            // Absolute path: srcuri://abs/path/to/file (authority-based v1 spec)
+            protocolUrl = `srcuri://abs/${parsed.path}`;
         } else {
+            // Workspace path: srcuri://workspace/path (authority IS workspace, v1 spec)
             protocolUrl = `srcuri://${parsed.path}`;
         }
 
