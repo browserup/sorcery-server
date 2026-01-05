@@ -111,10 +111,17 @@ fn is_valid_workspace_name(name: &str) -> bool {
 /// Validate file paths - safe characters only, no shell metacharacters.
 /// Allows: alphanumeric, standard path chars (-_./), space, @ (npm scopes), + (C++ files),
 /// parentheses, and square brackets. A leading '~' is permitted for home-relative paths.
+/// For Windows paths, allows ':' after drive letter (e.g., C:/Users/...).
 fn is_valid_file_path(path: &str) -> bool {
     if path.is_empty() || path.len() > 1024 {
         return false;
     }
+
+    // Check for Windows drive letter pattern (X:/ where X is A-Z)
+    let is_windows_path = path.len() >= 3
+        && path.chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false)
+        && path.chars().nth(1) == Some(':')
+        && path.chars().nth(2) == Some('/');
 
     for (idx, ch) in path.chars().enumerate() {
         if idx == 0 && ch == '~' {
@@ -123,6 +130,11 @@ fn is_valid_file_path(path: &str) -> bool {
 
         if ch == '~' {
             return false;
+        }
+
+        // Allow ':' at position 1 for Windows drive letters
+        if is_windows_path && idx == 1 && ch == ':' {
+            continue;
         }
 
         if ch.is_ascii_alphanumeric()

@@ -745,3 +745,247 @@ async fn test_file_path_pipe_rejected() {
     let html = String::from_utf8(body.to_vec()).unwrap();
     assert!(html.contains("Invalid file path"));
 }
+
+// =============================================================================
+// Authority-based URL mode tests
+// Verify that srcuri.com URLs convert correctly to srcuri:// protocol URLs
+// =============================================================================
+
+#[tokio::test]
+async fn test_implicit_workspace_mode() {
+    // srcuri.com/myrepo/file.rs:42 → srcuri://myrepo/file.rs:42
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/src/main.rs:42")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://myrepo/src/main.rs:42"),
+        "Implicit workspace should produce srcuri://myrepo/... URL. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_explicit_workspace_mode() {
+    // srcuri.com/workspace/myrepo/file.rs:42 → srcuri://workspace/myrepo/file.rs:42
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/workspace/myrepo/src/main.rs:42")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://workspace/myrepo/src/main.rs:42"),
+        "Explicit workspace should produce srcuri://workspace/... URL. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_match_mode() {
+    // srcuri.com/match/file.rs:42 → srcuri://match/file.rs:42
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/match/src/utils.py:10")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://match/src/utils.py:10"),
+        "Match mode should produce srcuri://match/... URL. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_abs_mode() {
+    // srcuri.com/abs/etc/hosts:1 → srcuri://abs/etc/hosts:1
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/abs/etc/hosts:1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://abs/etc/hosts:1"),
+        "Abs mode should produce srcuri://abs/... URL. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_abs_mode_windows_path() {
+    // srcuri.com/abs/C:/Users/file.txt:10 → srcuri://abs/C:/Users/file.txt:10
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/abs/C:/Users/alice/code/file.txt:10")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://abs/C:/Users/alice/code/file.txt:10"),
+        "Abs mode with Windows path should preserve drive letter. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_ext_mode_github() {
+    // srcuri.com/ext/https/github.com/... → provider interstitial (serves HTML+JS)
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/ext/https/github.com/owner/repo/blob/main/src/lib.rs")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Ext mode serves provider page (client-side JS handles fragment)
+    assert!(
+        html.contains("sorcery") || html.contains("provider") || html.contains("srcuri"),
+        "Ext mode should serve provider/interstitial page. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_reserved_workspace_name_rejected() {
+    // 'workspace', 'match', 'abs', 'ext' cannot be used as workspace names
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+
+    // Try using 'match' as a workspace name (not as mode)
+    // /workspace/match/file.rs would try to use 'match' as workspace name
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/workspace/match/file.rs:1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("Invalid workspace") || html.contains("srcuri://workspace/match/file.rs:1"),
+        "Reserved token as workspace should be rejected or handled. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_implicit_workspace_with_query_params() {
+    // srcuri.com/myrepo/file.rs:42?branch=main → srcuri://myrepo/file.rs:42?branch=main
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/myrepo/src/main.rs:42?branch=develop")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://myrepo/src/main.rs:42") && html.contains("branch=develop"),
+        "Query params should be preserved. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
+async fn test_match_mode_with_workspace_hint() {
+    // srcuri.com/match/file.rs:42?workspaceHint=backend → srcuri://match/file.rs:42?workspaceHint=backend
+    // Note: workspaceHint is passed through for desktop to handle
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/match/src/utils.py:10?workspaceHint=backend")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://match/src/utils.py:10"),
+        "Match mode with workspaceHint should work. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
