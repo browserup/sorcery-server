@@ -1119,6 +1119,7 @@ dependencies = [
  "base64",
  "http-body-util",
  "httpdate",
+ "percent-encoding",
  "regex",
  "serde",
  "serde_json",
