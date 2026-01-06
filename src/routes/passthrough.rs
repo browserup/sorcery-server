@@ -14,10 +14,10 @@ use super::templates::{MirrorTemplate, ErrorTemplate};
 pub enum UrlMode {
     /// srcuri.com/myrepo/... → srcuri://myrepo/...
     ImplicitWorkspace,
-    /// srcuri.com/workspace/myrepo/... → srcuri://workspace/myrepo/...
+    /// srcuri.com/wks/myrepo/... → srcuri://wks/myrepo/...
     ExplicitWorkspace,
-    /// srcuri.com/match/... → srcuri://match/...
-    Match,
+    /// srcuri.com/rel/... → srcuri://rel/...
+    Relative,
     /// srcuri.com/abs/... → srcuri://abs/...
     Absolute,
     /// srcuri.com/ext/https/... → srcuri://ext/https/...
@@ -25,7 +25,7 @@ pub enum UrlMode {
 }
 
 /// Reserved authority tokens that cannot be used as workspace names
-const RESERVED_AUTHORITIES: [&str; 4] = ["workspace", "match", "abs", "ext"];
+const RESERVED_AUTHORITIES: [&str; 4] = ["wks", "rel", "abs", "ext"];
 
 /// Detect URL mode from the first path segment
 fn detect_url_mode(path: &str) -> (UrlMode, &str) {
@@ -35,13 +35,13 @@ fn detect_url_mode(path: &str) -> (UrlMode, &str) {
     let first_segment = normalized.split('/').next().unwrap_or("");
 
     match first_segment {
-        "workspace" => {
-            let rest = normalized.strip_prefix("workspace/").unwrap_or(normalized);
+        "wks" => {
+            let rest = normalized.strip_prefix("wks/").unwrap_or(normalized);
             (UrlMode::ExplicitWorkspace, rest)
         }
-        "match" => {
-            let rest = normalized.strip_prefix("match/").unwrap_or(normalized);
-            (UrlMode::Match, rest)
+        "rel" => {
+            let rest = normalized.strip_prefix("rel/").unwrap_or(normalized);
+            (UrlMode::Relative, rest)
         }
         "abs" => {
             let rest = normalized.strip_prefix("abs/").unwrap_or(normalized);
@@ -184,7 +184,7 @@ pub async fn catchall_handler(
             // Serve provider interstitial page (client-side to preserve fragments)
             serve_provider_page()
         }
-        UrlMode::Absolute | UrlMode::Match | UrlMode::ExplicitWorkspace | UrlMode::ImplicitWorkspace => {
+        UrlMode::Absolute | UrlMode::Relative | UrlMode::ExplicitWorkspace | UrlMode::ImplicitWorkspace => {
             // Check if implicit workspace path looks like a provider URL
             if mode == UrlMode::ImplicitWorkspace && is_provider_path(&path) {
                 serve_provider_page()
@@ -366,8 +366,8 @@ fn parse_mirror_path(path: &str, mode: UrlMode, params: MirrorQuery) -> SrcuriTa
 
     // Strip authority prefix if present
     let clean_path = match mode {
-        UrlMode::ExplicitWorkspace => trimmed.strip_prefix("workspace/").unwrap_or(trimmed),
-        UrlMode::Match => trimmed.strip_prefix("match/").unwrap_or(trimmed),
+        UrlMode::ExplicitWorkspace => trimmed.strip_prefix("wks/").unwrap_or(trimmed),
+        UrlMode::Relative => trimmed.strip_prefix("rel/").unwrap_or(trimmed),
         UrlMode::Absolute => trimmed.strip_prefix("abs/").unwrap_or(trimmed),
         UrlMode::External => trimmed.strip_prefix("ext/").unwrap_or(trimmed),
         UrlMode::ImplicitWorkspace => trimmed,
@@ -391,8 +391,8 @@ fn parse_mirror_path(path: &str, mode: UrlMode, params: MirrorQuery) -> SrcuriTa
                 is_absolute: true,
             }
         }
-        UrlMode::Match => {
-            // Match mode: path is a search pattern, no workspace extraction
+        UrlMode::Relative => {
+            // Relative mode: path is a search pattern, no workspace extraction
             SrcuriTarget {
                 remote,
                 repo_name: String::new(),
@@ -439,10 +439,10 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
             let path = target.file_path.as_deref().unwrap_or("");
             format!("srcuri://abs/{}", path)
         }
-        UrlMode::Match => {
-            // Match mode: srcuri://match/path/to/file
+        UrlMode::Relative => {
+            // Relative mode: srcuri://rel/path/to/file
             let path = target.file_path.as_deref().unwrap_or("");
-            format!("srcuri://match/{}", path)
+            format!("srcuri://rel/{}", path)
         }
         UrlMode::External => {
             // External mode: srcuri://ext/path (preserved from URL)
@@ -450,8 +450,8 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
             format!("srcuri://ext/{}", path)
         }
         UrlMode::ExplicitWorkspace => {
-            // Explicit workspace: srcuri://workspace/repo/path
-            let mut s = format!("srcuri://workspace/{}", target.repo_name);
+            // Explicit workspace: srcuri://wks/repo/path
+            let mut s = format!("srcuri://wks/{}", target.repo_name);
             if let Some(ref path) = target.file_path {
                 s.push('/');
                 s.push_str(path);

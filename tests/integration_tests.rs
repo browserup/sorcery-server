@@ -779,14 +779,14 @@ async fn test_implicit_workspace_mode() {
 
 #[tokio::test]
 async fn test_explicit_workspace_mode() {
-    // srcuri.com/workspace/myrepo/file.rs:42 → srcuri://workspace/myrepo/file.rs:42
+    // srcuri.com/wks/myrepo/file.rs:42 → srcuri://wks/myrepo/file.rs:42
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/workspace/myrepo/src/main.rs:42")
+                .uri("/wks/myrepo/src/main.rs:42")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -797,22 +797,22 @@ async fn test_explicit_workspace_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://workspace/myrepo/src/main.rs:42"),
-        "Explicit workspace should produce srcuri://workspace/... URL. HTML: {}",
+        html.contains("srcuri://wks/myrepo/src/main.rs:42"),
+        "Explicit workspace should produce srcuri://wks/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
 }
 
 #[tokio::test]
-async fn test_match_mode() {
-    // srcuri.com/match/file.rs:42 → srcuri://match/file.rs:42
+async fn test_rel_mode() {
+    // srcuri.com/rel/file.rs:42 → srcuri://rel/file.rs:42
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/match/src/utils.py:10")
+                .uri("/rel/src/utils.py:10")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -823,8 +823,8 @@ async fn test_match_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://match/src/utils.py:10"),
-        "Match mode should produce srcuri://match/... URL. HTML: {}",
+        html.contains("srcuri://rel/src/utils.py:10"),
+        "Rel mode should produce srcuri://rel/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
 }
@@ -910,17 +910,17 @@ async fn test_ext_mode_github() {
 
 #[tokio::test]
 async fn test_reserved_workspace_name_rejected() {
-    // 'workspace', 'match', 'abs', 'ext' cannot be used as workspace names
+    // 'wks', 'rel', 'abs', 'ext' cannot be used as workspace names
     use http_body_util::BodyExt;
 
     let app = create_test_app();
 
-    // Try using 'match' as a workspace name (not as mode)
-    // /workspace/match/file.rs would try to use 'match' as workspace name
+    // Try using 'rel' as a workspace name (not as mode)
+    // /wks/rel/file.rs would try to use 'rel' as workspace name
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/workspace/match/file.rs:1")
+                .uri("/wks/rel/file.rs:1")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -931,7 +931,7 @@ async fn test_reserved_workspace_name_rejected() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("Invalid workspace") || html.contains("srcuri://workspace/match/file.rs:1"),
+        html.contains("Invalid workspace") || html.contains("srcuri://wks/rel/file.rs:1"),
         "Reserved token as workspace should be rejected or handled. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -964,8 +964,8 @@ async fn test_implicit_workspace_with_query_params() {
 }
 
 #[tokio::test]
-async fn test_match_mode_with_workspace_hint() {
-    // srcuri.com/match/file.rs:42?workspaceHint=backend → srcuri://match/file.rs:42?workspaceHint=backend
+async fn test_rel_mode_with_workspace_hint() {
+    // srcuri.com/rel/file.rs:42?workspaceHint=backend → srcuri://rel/file.rs:42?workspaceHint=backend
     // Note: workspaceHint is passed through for desktop to handle
     use http_body_util::BodyExt;
 
@@ -973,7 +973,7 @@ async fn test_match_mode_with_workspace_hint() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/match/src/utils.py:10?workspaceHint=backend")
+                .uri("/rel/src/utils.py:10?workspaceHint=backend")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -984,8 +984,8 @@ async fn test_match_mode_with_workspace_hint() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://match/src/utils.py:10"),
-        "Match mode with workspaceHint should work. HTML: {}",
+        html.contains("srcuri://rel/src/utils.py:10"),
+        "Rel mode with workspaceHint should work. HTML: {}",
         &html[..1000.min(html.len())]
     );
 }

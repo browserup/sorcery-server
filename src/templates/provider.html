@@ -487,7 +487,7 @@
 
         // Build srcuri:// URL from parsed target (v1 spec with authority-based mode)
         function buildSrcuriUrl(target) {
-            // Use authority-based format: srcuri://workspace/path (workspace IS authority)
+            // Use authority-based format: srcuri://repo/path (workspace name IS authority)
             var url = 'srcuri://' + target.repoName;
             if (target.filePath) {
                 url += '/' + target.filePath;

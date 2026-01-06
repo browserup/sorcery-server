@@ -20,7 +20,7 @@ External URL mode (`ext`) enables srcuri links to be created directly from git h
 ### Prerequisites
 
 Readers should be familiar with the core srcuri protocol, particularly:
-- Workspace mode (`srcuri://workspace/path`)
+- Workspace mode (`srcuri://wks/path`)
 - Query parameters (`?remote=`, `?workspaceHint=`)
 - Line/column handling
 - The linkification requirement (`srcuri://` for clickable links)
@@ -62,8 +62,8 @@ This fits into the complete authority system:
 | Authority | Mode | Example |
 |-----------|------|---------|
 | `<workspace>` | Implicit workspace | `srcuri://myrepo/src/lib.rs:42` |
-| `workspace` | Explicit workspace | `srcuri://workspace/myrepo/src/lib.rs:42` |
-| `match` | Search | `srcuri://match/README.md:1` |
+| `wks` | Explicit workspace | `srcuri://wks/myrepo/src/lib.rs:42` |
+| `rel` | Relative/search | `srcuri://rel/README.md:1` |
 | `abs` | Absolute path | `srcuri://abs/etc/hosts:1` |
 | `ext` | External URL | `srcuri://ext/https/github.com/owner/repo/blob/main/file.rs#L42` |
 
@@ -126,8 +126,8 @@ Detection is unambiguous based on the authority:
 
 | Authority | Mode |
 |-----------|------|
-| `workspace` | Explicit workspace |
-| `match` | Search all workspaces |
+| `wks` | Explicit workspace |
+| `rel` | Relative/search all workspaces |
 | `abs` | Absolute path |
 | `ext` | External URL |
 | Anything else | Implicit workspace |
@@ -142,9 +142,9 @@ srcuri://myworkspace/src/lib.rs:42
          ^^^^^^^^^^^
          Not a reserved token → Implicit workspace
 
-srcuri://match/README.md:1
-         ^^^^^
-         Authority = "match" → Search mode
+srcuri://rel/README.md:1
+         ^^^
+         Authority = "rel" → Relative/search mode
 ```
 
 ### Line Number Handling
@@ -587,11 +587,11 @@ srcuri-link          = "srcuri://" authority "/" path
 
 authority            = reserved-token / workspace-name
 
-reserved-token       = "workspace" / "match" / "abs" / "ext"
+reserved-token       = "wks" / "rel" / "abs" / "ext"
 
 ; When authority = reserved token:
-workspace-mode       = "workspace" "/" workspace-name "/" relative-path [ location ]
-match-mode           = "match" "/" relative-path [ location ]
+workspace-mode       = "wks" "/" workspace-name "/" relative-path [ location ]
+rel-mode             = "rel" "/" relative-path [ location ]
 abs-mode             = "abs" "/" absolute-path [ location ]
 ext-mode             = "ext" "/" scheme "/" provider-url [ "?" query ] [ "#" fragment ]
 

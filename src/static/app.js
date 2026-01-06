@@ -73,7 +73,7 @@
             // Absolute path: srcuri://abs/path/to/file (authority-based v1 spec)
             protocolUrl = `srcuri://abs/${parsed.path}`;
         } else {
-            // Workspace path: srcuri://workspace/path (authority IS workspace, v1 spec)
+            // Workspace path: srcuri://repo/path (workspace name IS authority, v1 spec)
             protocolUrl = `srcuri://${parsed.path}`;
         }
 
