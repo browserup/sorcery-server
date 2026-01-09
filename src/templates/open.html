@@ -243,13 +243,15 @@
             <div class="header">
                 <div class="logo">
                     <svg viewBox="0 0 512 512" fill="none">
-                        <rect x="70" y="350" width="200" height="45" rx="8" transform="rotate(-45 70 350)" fill="#1a1a1a"/>
-                        <path d="M330 60 L350 150 L440 170 L350 190 L330 280 L310 190 L220 170 L310 150 Z" fill="url(#sparkleGradient)"/>
+                        <polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/>
+                        <polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#sparkleGradient)"/>
+                        <polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/>
                         <defs>
-                            <linearGradient id="sparkleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <radialGradient id="sparkleGradient" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse">
                                 <stop offset="0%" stop-color="#9333ea"/>
-                                <stop offset="100%" stop-color="#c026d3"/>
-                            </linearGradient>
+                                <stop offset="70%" stop-color="#c026d3"/>
+                                <stop offset="100%" stop-color="#f59e0b"/>
+                            </radialGradient>
                         </defs>
                     </svg>
                 </div>

@@ -165,7 +165,7 @@ async fn serve_app_js(Host(host): Host) -> Response<Body> {
         .expect("static response body should always be valid")
 }
 
-const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/><polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/><defs><radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#9333ea"/><stop offset="70%" stop-color="#c026d3"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs></svg>"##;
+const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/><polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/><polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/><defs><radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#9333ea"/><stop offset="70%" stop-color="#c026d3"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs></svg>"##;
 
 async fn serve_favicon(Host(host): Host) -> Response<Body> {
     let host_without_port = strip_port(&host);
