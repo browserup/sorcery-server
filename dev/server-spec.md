@@ -495,8 +495,9 @@ The reference implementation is in Rust using Axum:
 - Repository: `sorcery-server`
 - Key files:
   - `src/routes/passthrough.rs` - HTTP handlers for passthrough and mirror pages
-  - `src/routes/provider.rs` - Provider passthrough interstitial pages
-  - `src/static/app.js` - Client-side redirect for `/open` endpoint
+  - `src/routes/open.rs` - Handles `/open` endpoint
+  - `src/routes/templates.rs` - Template rendering
+  - `src/static/app.js` - Client-side redirect logic
 
 **Shared Library:** The URL parsing logic lives in the `srcuri-core` crate
 (located in `sorcery-desktop/srcuri-core/`). This ensures consistent parsing

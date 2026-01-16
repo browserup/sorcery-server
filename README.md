@@ -129,6 +129,7 @@ curl "http://localhost:3000/?_subdomain=www"
 ### Environment Variables
 
 - `PORT` - Server port (default: 3000)
+- `BASE_DOMAIN` - Base domain for redirects (default: `srcuri.com`)
 - `TENANTS_DIR` - Directory containing tenant configs (default: `sorcery-server/tenants`)
 - `RUST_LOG` - Logging level (default: `sorcery_server=debug`)
 
@@ -137,8 +138,6 @@ curl "http://localhost:3000/?_subdomain=www"
 ```bash
 cargo test
 ```
-
-111 tests covering URL parsing, subdomain detection, and integration scenarios.
 
 ### Test Endpoints
 
@@ -258,9 +257,10 @@ Subdomain mapping:
 
 ## Documentation
 
-- **URL Design Rationale**: `dev/srcuri-website-url-design.md`
-- **Translator Mode Spec**: `dev/translator-mode.md`
 - **Server Spec**: `dev/server-spec.md`
+- **Protocol Spec**: `dev/srcuri-protocol-spec-v1.md`
+- **Provider Passthrough Spec**: `dev/srcuri-provider-passthrough-v1.md`
+- **Remote Links Spec**: `dev/remote-links-spec.md`
 
 ## Repository
 
