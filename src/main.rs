@@ -16,7 +16,7 @@ use tower_http::trace::TraceLayer;
 use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use sorcery_server::{AppState, csp, routes, tenant, subdomain::{self, SubdomainMode}, strip_port};
+use sorcery_server::{AppState, csp, routes, tenant, subdomain::{self, SubdomainMode}};
 
 const ONE_DAY_SECS: u64 = 86_400;
 const NINETY_DAYS_SECS: u64 = 7_776_000;
@@ -143,8 +143,7 @@ async fn health_handler() -> &'static str {
 
 async fn serve_app_js(Host(host): Host) -> Response<Body> {
     let content = include_str!("static/app.js");
-    let host_without_port = strip_port(&host);
-    let is_localhost = host_without_port == "localhost" || host_without_port == "127.0.0.1";
+    let is_localhost = subdomain::is_localhost(&host);
 
     let mut builder = Response::builder()
         .status(StatusCode::OK)
@@ -168,8 +167,7 @@ async fn serve_app_js(Host(host): Host) -> Response<Body> {
 const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/><polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/><polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/><defs><radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#9333ea"/><stop offset="70%" stop-color="#c026d3"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs></svg>"##;
 
 async fn serve_favicon(Host(host): Host) -> Response<Body> {
-    let host_without_port = strip_port(&host);
-    let is_localhost = host_without_port == "localhost" || host_without_port == "127.0.0.1";
+    let is_localhost = subdomain::is_localhost(&host);
 
     let mut builder = Response::builder()
         .status(StatusCode::OK)

@@ -18,7 +18,7 @@ pub fn detect_mode(host: &str, uri: &Uri) -> SubdomainMode {
     detect_mode_from_host(host)
 }
 
-fn is_localhost(host: &str) -> bool {
+pub fn is_localhost(host: &str) -> bool {
     let host_without_port = strip_port(host);
     host_without_port == "localhost"
         || host_without_port == "127.0.0.1"
