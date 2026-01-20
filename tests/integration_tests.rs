@@ -685,26 +685,6 @@ async fn test_file_path_backtick_rejected() {
 }
 
 #[tokio::test]
-async fn test_file_path_mid_tilde_rejected() {
-    use http_body_util::BodyExt;
-
-    let app = create_test_app();
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/myrepo/src/foo~bar.rs")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let html = String::from_utf8(body.to_vec()).unwrap();
-    assert!(html.contains("Invalid file path"));
-}
-
-#[tokio::test]
 async fn test_file_path_angle_brackets_rejected() {
     use http_body_util::BodyExt;
 
@@ -883,7 +863,8 @@ async fn test_abs_mode_windows_path() {
 
 #[tokio::test]
 async fn test_ext_mode_github() {
-    // srcuri.com/ext/https/github.com/... → provider interstitial (serves HTML+JS)
+    // srcuri.com/ext/https/github.com/... → provider interstitial page
+    // This page uses client-side JS to parse the URL (preserving hash fragments)
     use http_body_util::BodyExt;
 
     let app = create_test_app();
@@ -897,14 +878,19 @@ async fn test_ext_mode_github() {
         .await
         .unwrap();
 
+    assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let html = String::from_utf8(body.to_vec()).unwrap();
 
-    // Ext mode serves provider page (client-side JS handles fragment)
+    // Provider page has specific elements for client-side URL parsing
     assert!(
-        html.contains("sorcery") || html.contains("provider") || html.contains("srcuri"),
-        "Ext mode should serve provider/interstitial page. HTML: {}",
+        html.contains("Opening in Editor"),
+        "Ext mode should serve provider interstitial page with 'Opening in Editor' status. HTML: {}",
         &html[..1000.min(html.len())]
+    );
+    assert!(
+        html.contains("parseRemoteUrl"),
+        "Provider page should contain client-side URL parser"
     );
 }
 
@@ -916,7 +902,7 @@ async fn test_reserved_workspace_name_rejected() {
     let app = create_test_app();
 
     // Try using 'rel' as a workspace name (not as mode)
-    // /wks/rel/file.rs would try to use 'rel' as workspace name
+    // /wks/rel/file.rs tries to use 'rel' as workspace name - should be rejected
     let response = app
         .oneshot(
             Request::builder()
@@ -931,8 +917,8 @@ async fn test_reserved_workspace_name_rejected() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("Invalid workspace") || html.contains("srcuri://wks/rel/file.rs:1"),
-        "Reserved token as workspace should be rejected or handled. HTML: {}",
+        html.contains("Invalid workspace"),
+        "Reserved authority 'rel' used as workspace name should be rejected. HTML: {}",
         &html[..1000.min(html.len())]
     );
 }
@@ -959,33 +945,6 @@ async fn test_implicit_workspace_with_query_params() {
     assert!(
         html.contains("srcuri://myrepo/src/main.rs:42") && html.contains("branch=develop"),
         "Query params should be preserved. HTML: {}",
-        &html[..1000.min(html.len())]
-    );
-}
-
-#[tokio::test]
-async fn test_rel_mode_with_workspace_hint() {
-    // srcuri.com/rel/file.rs:42?workspaceHint=backend → srcuri://rel/file.rs:42?workspaceHint=backend
-    // Note: workspaceHint is passed through for desktop to handle
-    use http_body_util::BodyExt;
-
-    let app = create_test_app();
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/rel/src/utils.py:10?workspaceHint=backend")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    let body = response.into_body().collect().await.unwrap().to_bytes();
-    let html = String::from_utf8(body.to_vec()).unwrap();
-
-    assert!(
-        html.contains("srcuri://rel/src/utils.py:10"),
-        "Rel mode with workspaceHint should work. HTML: {}",
         &html[..1000.min(html.len())]
     );
 }

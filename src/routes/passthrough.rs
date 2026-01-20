@@ -109,7 +109,7 @@ fn is_valid_workspace_name(name: &str) -> bool {
 
 /// Validate file paths - safe characters only, no shell metacharacters.
 /// Allows: alphanumeric, standard path chars (-_./), space, @ (npm scopes), + (C++ files),
-/// parentheses, and square brackets. A leading '~' is permitted for home-relative paths.
+/// parentheses, square brackets, and tilde (for home paths like ~/... or backup files like file~).
 /// For Windows paths, allows ':' after drive letter (e.g., C:/Users/...).
 fn is_valid_file_path(path: &str) -> bool {
     if path.is_empty() || path.len() > 1024 {
@@ -123,21 +123,13 @@ fn is_valid_file_path(path: &str) -> bool {
         && path.chars().nth(2) == Some('/');
 
     for (idx, ch) in path.chars().enumerate() {
-        if idx == 0 && ch == '~' {
-            continue;
-        }
-
-        if ch == '~' {
-            return false;
-        }
-
         // Allow ':' at position 1 for Windows drive letters
         if is_windows_path && idx == 1 && ch == ':' {
             continue;
         }
 
         if ch.is_ascii_alphanumeric()
-            || matches!(ch, '-' | '_' | '.' | '/' | ' ' | '@' | '+' | '(' | ')' | '[' | ']')
+            || matches!(ch, '-' | '_' | '.' | '/' | ' ' | '@' | '+' | '(' | ')' | '[' | ']' | '~')
         {
             continue;
         }
@@ -555,4 +547,432 @@ fn normalize_remote(remote: Option<String>) -> String {
             .trim_start_matches("http://")
             .to_string()
     }).unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ========================================================================
+    // is_valid_branch_name tests
+    // ========================================================================
+
+    #[test]
+    fn branch_name_simple_valid() {
+        assert!(is_valid_branch_name("main"));
+        assert!(is_valid_branch_name("develop"));
+        assert!(is_valid_branch_name("feature123"));
+    }
+
+    #[test]
+    fn branch_name_with_allowed_special_chars() {
+        assert!(is_valid_branch_name("feature/new-thing"));
+        assert!(is_valid_branch_name("release_v1.2.3"));
+        assert!(is_valid_branch_name("user@domain"));
+        assert!(is_valid_branch_name("fix(scope)"));
+        assert!(is_valid_branch_name("deps+update"));
+        assert!(is_valid_branch_name("issue#123"));
+        assert!(is_valid_branch_name("tag=value"));
+        assert!(is_valid_branch_name("a,b,c"));
+    }
+
+    #[test]
+    fn branch_name_empty_rejected() {
+        assert!(!is_valid_branch_name(""));
+    }
+
+    #[test]
+    fn branch_name_too_long_rejected() {
+        let long_name = "a".repeat(129);
+        assert!(!is_valid_branch_name(&long_name));
+        // Exactly 128 should be ok
+        let max_name = "a".repeat(128);
+        assert!(is_valid_branch_name(&max_name));
+    }
+
+    #[test]
+    fn branch_name_path_traversal_rejected() {
+        assert!(!is_valid_branch_name(".."));
+        assert!(!is_valid_branch_name("foo/../bar"));
+        assert!(!is_valid_branch_name("../etc/passwd"));
+    }
+
+    #[test]
+    fn branch_name_leading_slash_rejected() {
+        assert!(!is_valid_branch_name("/main"));
+        assert!(!is_valid_branch_name("/feature/foo"));
+    }
+
+    #[test]
+    fn branch_name_trailing_slash_rejected() {
+        assert!(!is_valid_branch_name("main/"));
+        assert!(!is_valid_branch_name("feature/foo/"));
+    }
+
+    #[test]
+    fn branch_name_shell_metachar_rejected() {
+        assert!(!is_valid_branch_name("branch;rm -rf"));
+        assert!(!is_valid_branch_name("branch|cat"));
+        assert!(!is_valid_branch_name("branch`whoami`"));
+        assert!(!is_valid_branch_name("branch$HOME"));
+        assert!(!is_valid_branch_name("branch<script>"));
+        assert!(!is_valid_branch_name("branch>file"));
+    }
+
+    #[test]
+    fn branch_name_quotes_rejected() {
+        assert!(!is_valid_branch_name("branch'inject"));
+        assert!(!is_valid_branch_name("branch\"inject"));
+    }
+
+    #[test]
+    fn branch_name_space_rejected() {
+        assert!(!is_valid_branch_name("my branch"));
+    }
+
+    // ========================================================================
+    // is_valid_remote_url tests
+    // ========================================================================
+
+    #[test]
+    fn remote_url_simple_valid() {
+        assert!(is_valid_remote_url("github.com/owner/repo"));
+        assert!(is_valid_remote_url("gitlab.com/group/project"));
+        assert!(is_valid_remote_url("bitbucket.org/team/repo"));
+    }
+
+    #[test]
+    fn remote_url_with_protocol_stripped() {
+        assert!(is_valid_remote_url("https://github.com/owner/repo"));
+        assert!(is_valid_remote_url("http://gitlab.com/owner/repo"));
+        assert!(is_valid_remote_url("git@github.com:owner/repo"));
+    }
+
+    #[test]
+    fn remote_url_with_allowed_special_chars() {
+        assert!(is_valid_remote_url("github.com/owner/my-repo"));
+        assert!(is_valid_remote_url("github.com/owner/my_repo"));
+        assert!(is_valid_remote_url("github.com/owner/my.repo"));
+        assert!(is_valid_remote_url("git@github.com:owner/repo.git"));
+    }
+
+    #[test]
+    fn remote_url_empty_rejected() {
+        assert!(!is_valid_remote_url(""));
+        // After stripping protocol, path is empty
+        assert!(!is_valid_remote_url("https://"));
+    }
+
+    #[test]
+    fn remote_url_too_long_rejected() {
+        let long_url = format!("github.com/{}", "a".repeat(250));
+        assert!(!is_valid_remote_url(&long_url));
+        // Exactly 256 should be ok
+        let max_url = format!("github.com/{}", "a".repeat(245));
+        assert!(is_valid_remote_url(&max_url));
+    }
+
+    #[test]
+    fn remote_url_path_traversal_rejected() {
+        assert!(!is_valid_remote_url("github.com/../etc/passwd"));
+        assert!(!is_valid_remote_url("github.com/owner/../other"));
+        assert!(!is_valid_remote_url(".."));
+    }
+
+    #[test]
+    fn remote_url_double_slash_rejected() {
+        assert!(!is_valid_remote_url("github.com//owner/repo"));
+        assert!(!is_valid_remote_url("github.com/owner//repo"));
+    }
+
+    #[test]
+    fn remote_url_leading_slash_rejected() {
+        assert!(!is_valid_remote_url("/github.com/owner/repo"));
+    }
+
+    #[test]
+    fn remote_url_shell_metachar_rejected() {
+        assert!(!is_valid_remote_url("github.com/owner;rm"));
+        assert!(!is_valid_remote_url("github.com/owner|cat"));
+        assert!(!is_valid_remote_url("github.com/owner`id`"));
+        assert!(!is_valid_remote_url("github.com/$HOME"));
+        assert!(!is_valid_remote_url("github.com/<script>"));
+    }
+
+    #[test]
+    fn remote_url_quotes_rejected() {
+        assert!(!is_valid_remote_url("github.com/owner'repo"));
+        assert!(!is_valid_remote_url("github.com/owner\"repo"));
+    }
+
+    #[test]
+    fn remote_url_space_rejected() {
+        assert!(!is_valid_remote_url("github.com/my repo"));
+    }
+
+    // ========================================================================
+    // is_valid_workspace_name tests
+    // ========================================================================
+
+    #[test]
+    fn workspace_name_simple_valid() {
+        assert!(is_valid_workspace_name("myrepo"));
+        assert!(is_valid_workspace_name("my-repo"));
+        assert!(is_valid_workspace_name("my_repo"));
+        assert!(is_valid_workspace_name("my.repo"));
+        assert!(is_valid_workspace_name("repo123"));
+    }
+
+    #[test]
+    fn workspace_name_empty_rejected() {
+        assert!(!is_valid_workspace_name(""));
+    }
+
+    #[test]
+    fn workspace_name_too_long_rejected() {
+        let long_name = "a".repeat(129);
+        assert!(!is_valid_workspace_name(&long_name));
+        // Exactly 128 should be ok
+        let max_name = "a".repeat(128);
+        assert!(is_valid_workspace_name(&max_name));
+    }
+
+    #[test]
+    fn workspace_name_reserved_authorities_rejected() {
+        assert!(!is_valid_workspace_name("wks"));
+        assert!(!is_valid_workspace_name("rel"));
+        assert!(!is_valid_workspace_name("abs"));
+        assert!(!is_valid_workspace_name("ext"));
+        // Case insensitive
+        assert!(!is_valid_workspace_name("WKS"));
+        assert!(!is_valid_workspace_name("REL"));
+        assert!(!is_valid_workspace_name("ABS"));
+        assert!(!is_valid_workspace_name("EXT"));
+        assert!(!is_valid_workspace_name("Wks"));
+    }
+
+    #[test]
+    fn workspace_name_slash_rejected() {
+        assert!(!is_valid_workspace_name("my/repo"));
+        assert!(!is_valid_workspace_name("/myrepo"));
+    }
+
+    #[test]
+    fn workspace_name_shell_metachar_rejected() {
+        assert!(!is_valid_workspace_name("repo;rm"));
+        assert!(!is_valid_workspace_name("repo|cat"));
+        assert!(!is_valid_workspace_name("repo`id`"));
+        assert!(!is_valid_workspace_name("repo$HOME"));
+        assert!(!is_valid_workspace_name("repo<script>"));
+    }
+
+    #[test]
+    fn workspace_name_space_rejected() {
+        assert!(!is_valid_workspace_name("my repo"));
+    }
+
+    #[test]
+    fn workspace_name_at_sign_rejected() {
+        // @ is valid in branch names but not workspace names
+        assert!(!is_valid_workspace_name("user@scope"));
+    }
+
+    // ========================================================================
+    // is_valid_file_path tests
+    // ========================================================================
+
+    #[test]
+    fn file_path_simple_valid() {
+        assert!(is_valid_file_path("src/main.rs"));
+        assert!(is_valid_file_path("lib/foo/bar.js"));
+        assert!(is_valid_file_path("README.md"));
+    }
+
+    #[test]
+    fn file_path_with_spaces_valid() {
+        assert!(is_valid_file_path("My Documents/file.txt"));
+        assert!(is_valid_file_path("path with spaces/file.rs"));
+    }
+
+    #[test]
+    fn file_path_with_at_sign_valid() {
+        // npm scopes use @
+        assert!(is_valid_file_path("node_modules/@scope/package/index.js"));
+    }
+
+    #[test]
+    fn file_path_with_plus_valid() {
+        // C++ files
+        assert!(is_valid_file_path("src/main.cpp"));
+        assert!(is_valid_file_path("src/foo++.cpp"));
+    }
+
+    #[test]
+    fn file_path_with_parens_and_brackets_valid() {
+        assert!(is_valid_file_path("test/file(1).txt"));
+        assert!(is_valid_file_path("test/file[backup].txt"));
+        assert!(is_valid_file_path("src/(components)/Button.tsx"));
+    }
+
+    #[test]
+    fn file_path_tilde_valid() {
+        // Home directory paths
+        assert!(is_valid_file_path("~/projects/myapp/src/main.rs"));
+        assert!(is_valid_file_path("~/.config/app.toml"));
+        // Backup files (common editor convention)
+        assert!(is_valid_file_path("file.rs~"));
+        assert!(is_valid_file_path("src/backup~"));
+        // Tilde in middle of filename
+        assert!(is_valid_file_path("foo~bar.txt"));
+    }
+
+    #[test]
+    fn file_path_windows_drive_valid() {
+        assert!(is_valid_file_path("C:/Users/name/projects/file.rs"));
+        assert!(is_valid_file_path("D:/code/app/main.cpp"));
+    }
+
+    #[test]
+    fn file_path_empty_rejected() {
+        assert!(!is_valid_file_path(""));
+    }
+
+    #[test]
+    fn file_path_too_long_rejected() {
+        let long_path = "a/".repeat(512) + "file.rs";
+        assert!(!is_valid_file_path(&long_path));
+        // Under 1024 should be ok
+        let ok_path = "a".repeat(1000);
+        assert!(is_valid_file_path(&ok_path));
+    }
+
+    #[test]
+    fn file_path_traversal_rejected() {
+        assert!(!is_valid_file_path(".."));
+        assert!(!is_valid_file_path("../etc/passwd"));
+        assert!(!is_valid_file_path("foo/../bar"));
+        assert!(!is_valid_file_path("foo/bar/../../etc/passwd"));
+    }
+
+    #[test]
+    fn file_path_shell_metachar_rejected() {
+        assert!(!is_valid_file_path("file;rm -rf"));
+        assert!(!is_valid_file_path("file|cat /etc/passwd"));
+        assert!(!is_valid_file_path("file`whoami`"));
+        assert!(!is_valid_file_path("$HOME/file"));
+        assert!(!is_valid_file_path("file<script>"));
+        assert!(!is_valid_file_path("file>output"));
+    }
+
+    #[test]
+    fn file_path_quotes_rejected() {
+        assert!(!is_valid_file_path("file'inject.rs"));
+        assert!(!is_valid_file_path("file\"inject.rs"));
+    }
+
+    #[test]
+    fn file_path_colon_mid_path_rejected() {
+        // Colon only allowed for Windows drive letter at position 1
+        assert!(!is_valid_file_path("foo:bar"));
+        assert!(!is_valid_file_path("src/file:line"));
+    }
+
+    // ========================================================================
+    // safe_href_url tests
+    // ========================================================================
+
+    #[test]
+    fn safe_href_http_allowed() {
+        assert_eq!(safe_href_url("http://example.com"), "http://example.com");
+        assert_eq!(safe_href_url("http://github.com/owner/repo"), "http://github.com/owner/repo");
+    }
+
+    #[test]
+    fn safe_href_https_allowed() {
+        assert_eq!(safe_href_url("https://example.com"), "https://example.com");
+        assert_eq!(safe_href_url("https://github.com/owner/repo"), "https://github.com/owner/repo");
+    }
+
+    #[test]
+    fn safe_href_mixed_case_allowed() {
+        assert_eq!(safe_href_url("HTTPS://example.com"), "HTTPS://example.com");
+        assert_eq!(safe_href_url("HTTP://example.com"), "HTTP://example.com");
+        assert_eq!(safe_href_url("HtTpS://example.com"), "HtTpS://example.com");
+    }
+
+    #[test]
+    fn safe_href_javascript_blocked() {
+        assert_eq!(safe_href_url("javascript:alert(1)"), "");
+        assert_eq!(safe_href_url("JAVASCRIPT:alert(1)"), "");
+        assert_eq!(safe_href_url("JavaScript:alert(document.cookie)"), "");
+    }
+
+    #[test]
+    fn safe_href_data_blocked() {
+        assert_eq!(safe_href_url("data:text/html,<script>alert(1)</script>"), "");
+        assert_eq!(safe_href_url("DATA:text/html,test"), "");
+    }
+
+    #[test]
+    fn safe_href_vbscript_blocked() {
+        assert_eq!(safe_href_url("vbscript:msgbox(1)"), "");
+        assert_eq!(safe_href_url("VBSCRIPT:test"), "");
+    }
+
+    #[test]
+    fn safe_href_file_blocked() {
+        assert_eq!(safe_href_url("file:///etc/passwd"), "");
+        assert_eq!(safe_href_url("FILE:///C:/Windows/System32"), "");
+    }
+
+    #[test]
+    fn safe_href_no_protocol_blocked() {
+        assert_eq!(safe_href_url("example.com"), "");
+        assert_eq!(safe_href_url("//example.com"), "");
+        assert_eq!(safe_href_url("/path/to/file"), "");
+    }
+
+    #[test]
+    fn safe_href_empty_returns_empty() {
+        assert_eq!(safe_href_url(""), "");
+    }
+
+    // ========================================================================
+    // detect_url_mode tests
+    // ========================================================================
+
+    #[test]
+    fn detect_mode_implicit_workspace() {
+        let (mode, rest) = detect_url_mode("/myrepo/src/main.rs");
+        assert_eq!(mode, UrlMode::ImplicitWorkspace);
+        assert_eq!(rest, "myrepo/src/main.rs");
+    }
+
+    #[test]
+    fn detect_mode_explicit_workspace() {
+        let (mode, rest) = detect_url_mode("/wks/myrepo/src/main.rs");
+        assert_eq!(mode, UrlMode::ExplicitWorkspace);
+        assert_eq!(rest, "myrepo/src/main.rs");
+    }
+
+    #[test]
+    fn detect_mode_relative() {
+        let (mode, rest) = detect_url_mode("/rel/main.rs");
+        assert_eq!(mode, UrlMode::Relative);
+        assert_eq!(rest, "main.rs");
+    }
+
+    #[test]
+    fn detect_mode_absolute() {
+        let (mode, rest) = detect_url_mode("/abs/home/user/file.rs");
+        assert_eq!(mode, UrlMode::Absolute);
+        assert_eq!(rest, "home/user/file.rs");
+    }
+
+    #[test]
+    fn detect_mode_external() {
+        let (mode, rest) = detect_url_mode("/ext/https/github.com/owner/repo");
+        assert_eq!(mode, UrlMode::External);
+        assert_eq!(rest, "https/github.com/owner/repo");
+    }
 }
