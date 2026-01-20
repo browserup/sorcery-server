@@ -100,7 +100,7 @@ The authority-based approach provides:
 
 ## URL Format Specification
 
-The protocol supports four distinct link modes, determined by the authority component.
+The protocol supports five distinct link modes, determined by the authority component.
 
 ### Quick Reference
 
@@ -109,6 +109,7 @@ The protocol supports four distinct link modes, determined by the authority comp
 | **Workspace (implicit)** | `<workspace>` | `srcuri://<workspace>/<path>:<line>`           | `srcuri://myrepo/src/main.rs:42` |
 | **Workspace (explicit)** | `wks` | `srcuri://wks/<workspace>/<path>:<line>` | `srcuri://wks/myrepo/src/main.rs:42` |
 | **Relative (search)** | `rel` | `srcuri://rel/<path>:<line>`                   | `srcuri://rel/main.rs:42` |
+| **Any (best-effort)** | `any` | `srcuri://any/<path>:<line>`                   | `srcuri://any/src/main.rs:42` |
 | **Absolute** | `abs` | `srcuri://abs/<path>:<line>`                   | `srcuri://abs/etc/hosts:1` |
 | **External** | `ext` | `srcuri://ext/<scheme>/<host>/<path>`          | `srcuri://ext/https/github.com/user/repo/...` |
 
@@ -118,6 +119,7 @@ These authority values are **reserved** and indicate explicit modes:
 
 - `wks` — explicit workspace mode (may be omitted; workspace name becomes authority)
 - `rel` — relative path search mode (searches all workspaces)
+- `any` — best-effort mode (workspace → relative → absolute)
 - `abs` — absolute filesystem path mode
 - `ext` — external URL mode
 
@@ -135,6 +137,7 @@ Parse srcuri:// link:
 3. Check if authority is a reserved token:
    - "wks" → Explicit Workspace Mode
    - "rel" → Relative Mode (search all workspaces)
+   - "any" → Any Mode (best-effort resolution)
    - "abs" → Absolute Path Mode
    - "ext" → External URL Mode
 
@@ -155,6 +158,10 @@ srcuri://...
     │        NO
     │         │
     ├─ Authority = "rel"? ──YES──► Relative Mode (search)
+    │         │
+    │        NO
+    │         │
+    ├─ Authority = "any"? ──YES──► Any Mode (best-effort)
     │         │
     │        NO
     │         │
@@ -373,7 +380,7 @@ srcuri://rel/nonexistent.txt:1
 → Shows error: "File not found in any configured workspace"
 ```
 
-**Query Parameters (rel mode):**
+**Query Parameters (rel/any mode):**
 - `workspaceHint` (string, optional): preferred workspace name to try first
 
 **Best Practices:**
@@ -384,7 +391,28 @@ srcuri://rel/nonexistent.txt:1
 
 ---
 
-### 4. Absolute Path Mode
+### 4. Any Mode (Best-Effort)
+
+**Syntax:**
+```
+srcuri://any/<path>:<line>:<column>[?workspaceHint=<name>]
+```
+
+**Description:** Best-effort resolution for sources that do not know whether a path is workspace-relative, search-relative, or absolute. Intended for terminals and log output. Do not emit this format when a more specific mode is known.
+
+**Resolution Order (applicable steps only):**
+1. **Workspace (hinted):** If the path is relative and `workspaceHint` is present, resolve as workspace mode using that workspace and the provided path. Missing workspace or file → error.
+2. **Workspace (leading segment):** If the path is relative and the first segment matches a configured workspace name (case-insensitive), resolve as workspace mode using the remainder of the path. Missing file → error.
+3. **Relative:** If the path is relative, resolve using Relative Mode search (with chooser on multiple matches). No matches → error.
+4. **Absolute:** If the path is absolute (POSIX `/`, Windows drive `C:/`, UNC `//`, or `~`), resolve as Absolute Path Mode.
+
+**Notes:**
+- `any` never attempts `ext` resolution.
+- If a higher-priority step is applicable but fails, resolution stops and returns an error.
+
+---
+
+### 5. Absolute Path Mode
 
 **Syntax:**
 ```
@@ -447,7 +475,7 @@ srcuri://abs/UNC/server/share/path/to/file.txt:5
 
 ---
 
-### 5. External URL Mode
+### 6. External URL Mode
 
 **Syntax:**
 ```
@@ -1050,6 +1078,17 @@ srcuri://rel/app-core/src/lib.rs:33?workspaceHint=sorcery-desktop
 - path: `app-core/src/lib.rs`
 - line: `33`
 - workspaceHint: `sorcery-desktop`
+
+### Any (best-effort)
+**Input:**
+```
+srcuri://any/src-tauri/src/main.rs:12
+```
+
+**Parsed:**
+- mode: `any`
+- path: `src-tauri/src/main.rs`
+- line: `12`
 
 ### Absolute (POSIX)
 **Input:**

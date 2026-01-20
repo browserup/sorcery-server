@@ -39,6 +39,9 @@ The path-based translator:
 ```
 Before: srcuri://myrepo/src/lib.rs:42?branch=main
 After:  https://srcuri.com/myrepo/src/lib.rs:42?branch=main
+
+Before: srcuri://any/src/main.rs:42
+After:  https://srcuri.com/any/src/main.rs:42
 ```
 
 ## URL Formats

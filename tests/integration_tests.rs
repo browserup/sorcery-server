@@ -810,6 +810,32 @@ async fn test_rel_mode() {
 }
 
 #[tokio::test]
+async fn test_any_mode() {
+    // srcuri.com/any/file.rs:42 → srcuri://any/file.rs:42
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/any/src/utils.py:10")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    assert!(
+        html.contains("srcuri://any/src/utils.py:10"),
+        "Any mode should produce srcuri://any/... URL. HTML: {}",
+        &html[..1000.min(html.len())]
+    );
+}
+
+#[tokio::test]
 async fn test_abs_mode() {
     // srcuri.com/abs/etc/hosts:1 → srcuri://abs/etc/hosts:1
     use http_body_util::BodyExt;

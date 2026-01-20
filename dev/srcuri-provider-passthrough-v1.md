@@ -64,6 +64,7 @@ This fits into the complete authority system:
 | `<workspace>` | Implicit workspace | `srcuri://myrepo/src/lib.rs:42` |
 | `wks` | Explicit workspace | `srcuri://wks/myrepo/src/lib.rs:42` |
 | `rel` | Relative/search | `srcuri://rel/README.md:1` |
+| `any` | Best-effort | `srcuri://any/src/lib.rs:42` |
 | `abs` | Absolute path | `srcuri://abs/etc/hosts:1` |
 | `ext` | External URL | `srcuri://ext/https/github.com/owner/repo/blob/main/file.rs#L42` |
 
@@ -128,6 +129,7 @@ Detection is unambiguous based on the authority:
 |-----------|------|
 | `wks` | Explicit workspace |
 | `rel` | Relative/search all workspaces |
+| `any` | Best-effort (workspace → relative → absolute) |
 | `abs` | Absolute path |
 | `ext` | External URL |
 | Anything else | Implicit workspace |

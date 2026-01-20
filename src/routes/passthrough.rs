@@ -18,6 +18,8 @@ pub enum UrlMode {
     ExplicitWorkspace,
     /// srcuri.com/rel/... → srcuri://rel/...
     Relative,
+    /// srcuri.com/any/... → srcuri://any/...
+    Any,
     /// srcuri.com/abs/... → srcuri://abs/...
     Absolute,
     /// srcuri.com/ext/https/... → srcuri://ext/https/...
@@ -25,7 +27,7 @@ pub enum UrlMode {
 }
 
 /// Reserved authority tokens that cannot be used as workspace names
-const RESERVED_AUTHORITIES: [&str; 4] = ["wks", "rel", "abs", "ext"];
+const RESERVED_AUTHORITIES: [&str; 5] = ["wks", "rel", "any", "abs", "ext"];
 
 /// Detect URL mode from the first path segment
 fn detect_url_mode(path: &str) -> (UrlMode, &str) {
@@ -42,6 +44,10 @@ fn detect_url_mode(path: &str) -> (UrlMode, &str) {
         "rel" => {
             let rest = normalized.strip_prefix("rel/").unwrap_or(normalized);
             (UrlMode::Relative, rest)
+        }
+        "any" => {
+            let rest = normalized.strip_prefix("any/").unwrap_or(normalized);
+            (UrlMode::Any, rest)
         }
         "abs" => {
             let rest = normalized.strip_prefix("abs/").unwrap_or(normalized);
@@ -176,7 +182,7 @@ pub async fn catchall_handler(
             // Serve provider interstitial page (client-side to preserve fragments)
             serve_provider_page()
         }
-        UrlMode::Absolute | UrlMode::Relative | UrlMode::ExplicitWorkspace | UrlMode::ImplicitWorkspace => {
+        UrlMode::Absolute | UrlMode::Relative | UrlMode::Any | UrlMode::ExplicitWorkspace | UrlMode::ImplicitWorkspace => {
             // Check if implicit workspace path looks like a provider URL
             if mode == UrlMode::ImplicitWorkspace && is_provider_path(&path) {
                 serve_provider_page()
@@ -360,6 +366,7 @@ fn parse_mirror_path(path: &str, mode: UrlMode, params: MirrorQuery) -> SrcuriTa
     let clean_path = match mode {
         UrlMode::ExplicitWorkspace => trimmed.strip_prefix("wks/").unwrap_or(trimmed),
         UrlMode::Relative => trimmed.strip_prefix("rel/").unwrap_or(trimmed),
+        UrlMode::Any => trimmed.strip_prefix("any/").unwrap_or(trimmed),
         UrlMode::Absolute => trimmed.strip_prefix("abs/").unwrap_or(trimmed),
         UrlMode::External => trimmed.strip_prefix("ext/").unwrap_or(trimmed),
         UrlMode::ImplicitWorkspace => trimmed,
@@ -383,8 +390,8 @@ fn parse_mirror_path(path: &str, mode: UrlMode, params: MirrorQuery) -> SrcuriTa
                 is_absolute: true,
             }
         }
-        UrlMode::Relative => {
-            // Relative mode: path is a search pattern, no workspace extraction
+        UrlMode::Relative | UrlMode::Any => {
+            // Relative/any mode: path is a search pattern, no workspace extraction
             SrcuriTarget {
                 remote,
                 repo_name: String::new(),
@@ -435,6 +442,11 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
             // Relative mode: srcuri://rel/path/to/file
             let path = target.file_path.as_deref().unwrap_or("");
             format!("srcuri://rel/{}", path)
+        }
+        UrlMode::Any => {
+            // Any mode: srcuri://any/path/to/file
+            let path = target.file_path.as_deref().unwrap_or("");
+            format!("srcuri://any/{}", path)
         }
         UrlMode::External => {
             // External mode: srcuri://ext/path (preserved from URL)
@@ -743,9 +755,11 @@ mod tests {
         assert!(!is_valid_workspace_name("rel"));
         assert!(!is_valid_workspace_name("abs"));
         assert!(!is_valid_workspace_name("ext"));
+        assert!(!is_valid_workspace_name("any"));
         // Case insensitive
         assert!(!is_valid_workspace_name("WKS"));
         assert!(!is_valid_workspace_name("REL"));
+        assert!(!is_valid_workspace_name("ANY"));
         assert!(!is_valid_workspace_name("ABS"));
         assert!(!is_valid_workspace_name("EXT"));
         assert!(!is_valid_workspace_name("Wks"));
@@ -960,6 +974,13 @@ mod tests {
         let (mode, rest) = detect_url_mode("/rel/main.rs");
         assert_eq!(mode, UrlMode::Relative);
         assert_eq!(rest, "main.rs");
+    }
+
+    #[test]
+    fn detect_mode_any() {
+        let (mode, rest) = detect_url_mode("/any/src/main.rs");
+        assert_eq!(mode, UrlMode::Any);
+        assert_eq!(rest, "src/main.rs");
     }
 
     #[test]
