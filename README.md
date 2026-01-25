@@ -174,10 +174,6 @@ srcuri.com       → A/CNAME to server
 *.srcuri.com     → A/CNAME to server (enterprise subdomains)
 ```
 
-### Production Deployment
-
-Compatible with: Fly.io, Railway, AWS ECS, Google Cloud Run, or any Docker host.
-
 ## Architecture
 
 ### Subdomain Routing
