@@ -28,7 +28,7 @@ fn main() {
         let entry = entry.expect("Failed to read directory entry");
         let path = entry.path();
 
-        if path.extension().map_or(false, |ext| ext == "html") {
+        if path.extension().is_some_and(|ext| ext == "html") {
             let content = fs::read_to_string(&path).expect("Failed to read template file");
             let filename = path.file_stem().unwrap().to_str().unwrap();
             let prefix = filename.to_uppercase().replace('-', "_");
