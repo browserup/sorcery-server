@@ -6,6 +6,7 @@ use axum::{
 };
 use serde::Deserialize;
 use std::fmt::Write;
+use tracing::error;
 use crate::parsing::{parse_remote_url, extract_path_line_suffix, ParseError, SrcuriTarget};
 use super::templates::{MirrorTemplate, ErrorTemplate};
 
@@ -321,7 +322,11 @@ fn render_invalid_ref_error(param_type: &str, ref_name: &str) -> Response {
         ),
         url: String::new(),
     };
-    Html(template.render().unwrap_or_else(|e| format!("Template error: {}", e))).into_response()
+    let html = template.render().unwrap_or_else(|err| {
+        error!(error = %err, "Failed to render error template");
+        format!("Template error: {}", err)
+    });
+    Html(html).into_response()
 }
 
 fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
@@ -355,7 +360,11 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
         message,
         url: String::new(),
     };
-    Html(template.render().unwrap_or_else(|e| format!("Template error: {}", e))).into_response()
+    let html = template.render().unwrap_or_else(|err| {
+        error!(error = %err, "Failed to render error template");
+        format!("Template error: {}", err)
+    });
+    Html(html).into_response()
 }
 
 /// Parse a mirror mode path based on detected URL mode
@@ -520,8 +529,9 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
         provider_name: provider_name.to_string(),
     };
 
-    let html = template.render().unwrap_or_else(|e| {
-        format!("Template error: {}", e)
+    let html = template.render().unwrap_or_else(|err| {
+        error!(error = %err, "Failed to render mirror template");
+        format!("Template error: {}", err)
     });
 
     let mut response = Html(html).into_response();
@@ -545,9 +555,11 @@ fn render_error(error: ParseError) -> Html<String> {
         message: error.message,
         url: safe_href_url(&error.original_url),
     };
-    Html(template.render().unwrap_or_else(|e| {
-        format!("Template error: {}", e)
-    }))
+    let html = template.render().unwrap_or_else(|err| {
+        error!(error = %err, "Failed to render error template");
+        format!("Template error: {}", err)
+    });
+    Html(html)
 }
 
 /// Normalize remote URL to strip protocol prefix.

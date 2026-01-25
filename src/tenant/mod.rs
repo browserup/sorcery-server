@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use tracing::warn;
 
 #[derive(Debug)]
 pub struct TenantManager {
@@ -21,19 +22,25 @@ impl TenantManager {
     }
 
     pub async fn get_config(&self, subdomain: &str) -> Arc<TenantConfig> {
-        let mut configs = self.configs.write().await;
-        if let Some(config) = configs.get(subdomain) {
-            return Arc::clone(config);
+        if let Some(config) = self.configs.read().await.get(subdomain).cloned() {
+            return config;
         }
 
         let config_path = self.tenants_dir.join(format!("{}.json", subdomain));
-        let config = Arc::new(
-            TenantConfig::load_from_file(config_path)
-                .await
-                .unwrap_or_else(|_| TenantConfig::default_config()),
-        );
-        configs.insert(subdomain.to_string(), Arc::clone(&config));
-        config
+        let config = match TenantConfig::load_from_file(config_path).await {
+            Ok(config) => config,
+            Err(err) => {
+                warn!(error = %err, subdomain = %subdomain, "Falling back to default tenant config");
+                TenantConfig::default_config()
+            }
+        };
+        let config = Arc::new(config);
+
+        let mut configs = self.configs.write().await;
+        let entry = configs
+            .entry(subdomain.to_string())
+            .or_insert_with(|| Arc::clone(&config));
+        Arc::clone(entry)
     }
 
     pub fn extract_subdomain(host: &str) -> String {

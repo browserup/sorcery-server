@@ -1,9 +1,10 @@
+use anyhow::Context;
 use axum::{
     routing::get,
     Router,
     response::{Response, Redirect, IntoResponse},
     body::Body,
-    http::{StatusCode, header, Uri},
+    http::{StatusCode, header, HeaderValue, Uri},
     extract::{Host, Query},
 };
 use std::net::SocketAddr;
@@ -23,6 +24,13 @@ const NINETY_DAYS_SECS: u64 = 7_776_000;
 
 #[tokio::main]
 async fn main() {
+    if let Err(err) = run().await {
+        tracing::error!("{:#}", err);
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -49,7 +57,7 @@ async fn main() {
             .burst_size(60)
             .key_extractor(SmartIpKeyExtractor)
             .finish()
-            .expect("Failed to build rate limiter config")
+            .context("build rate limiter config")?
     );
 
     let app = Router::new()
@@ -81,24 +89,21 @@ async fn main() {
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
 
-    let listener = match tokio::net::TcpListener::bind(addr).await {
-        Ok(l) => l,
-        Err(e) => {
-            tracing::error!("Failed to bind to {}: {}", addr, e);
-            std::process::exit(1);
-        }
-    };
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .with_context(|| format!("bind to {}", addr))?;
 
-    println!("\n  Sorcery Server running!\n");
-    println!("   Base URL:     http://localhost:{}", port);
-    println!("   Provider:     http://localhost:{}/github.com/owner/repo/blob/main/file.rs#L42", port);
-    println!("   Mirror:       http://localhost:{}/repo/src/lib.rs:42?branch=main", port);
-    println!("   Health:       http://localhost:{}/health\n", port);
+    tracing::info!("Sorcery Server running");
+    tracing::info!("Base URL: http://localhost:{}", port);
+    tracing::info!("Provider: http://localhost:{}/github.com/owner/repo/blob/main/file.rs#L42", port);
+    tracing::info!("Mirror: http://localhost:{}/repo/src/lib.rs:42?branch=main", port);
+    tracing::info!("Health: http://localhost:{}/health", port);
 
-    if let Err(e) = axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>()).await {
-        tracing::error!("Server error: {}", e);
-        std::process::exit(1);
-    }
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
+        .await
+        .context("server error")?;
+
+    Ok(())
 }
 
 async fn subdomain_aware_root(
@@ -145,23 +150,33 @@ async fn serve_app_js(Host(host): Host) -> Response<Body> {
     let content = include_str!("static/app.js");
     let is_localhost = subdomain::is_localhost(&host);
 
-    let mut builder = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/javascript");
+    let mut response = Response::new(Body::from(content));
+    *response.status_mut() = StatusCode::OK;
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/javascript"),
+    );
 
     if !is_localhost {
         let expires_time = SystemTime::now()
             .checked_add(Duration::from_secs(ONE_DAY_SECS))
             .unwrap_or(SystemTime::now());
         let expires_http = HttpDate::from(expires_time).to_string();
-        builder = builder
-            .header(header::CACHE_CONTROL, "public, max-age=86400, immutable")
-            .header(header::EXPIRES, expires_http);
+        response.headers_mut().insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("public, max-age=86400, immutable"),
+        );
+        match HeaderValue::from_str(&expires_http) {
+            Ok(value) => {
+                response.headers_mut().insert(header::EXPIRES, value);
+            }
+            Err(err) => {
+                tracing::warn!(error = %err, "Failed to set Expires header");
+            }
+        }
     }
 
-    builder
-        .body(Body::from(content))
-        .expect("static response body should always be valid")
+    response
 }
 
 const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/><polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/><polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/><defs><radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#9333ea"/><stop offset="70%" stop-color="#c026d3"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs></svg>"##;
@@ -169,23 +184,33 @@ const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0
 async fn serve_favicon(Host(host): Host) -> Response<Body> {
     let is_localhost = subdomain::is_localhost(&host);
 
-    let mut builder = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "image/svg+xml");
+    let mut response = Response::new(Body::from(FAVICON_SVG));
+    *response.status_mut() = StatusCode::OK;
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("image/svg+xml"),
+    );
 
     if !is_localhost {
         let expires_time = SystemTime::now()
             .checked_add(Duration::from_secs(NINETY_DAYS_SECS))
             .unwrap_or(SystemTime::now());
         let expires_http = HttpDate::from(expires_time).to_string();
-        builder = builder
-            .header(header::CACHE_CONTROL, "public, max-age=7776000, immutable")
-            .header(header::EXPIRES, expires_http);
+        response.headers_mut().insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("public, max-age=7776000, immutable"),
+        );
+        match HeaderValue::from_str(&expires_http) {
+            Ok(value) => {
+                response.headers_mut().insert(header::EXPIRES, value);
+            }
+            Err(err) => {
+                tracing::warn!(error = %err, "Failed to set Expires header");
+            }
+        }
     }
 
-    builder
-        .body(Body::from(FAVICON_SVG))
-        .expect("static response body should always be valid")
+    response
 }
 
 async fn serve_favicon_svg(Host(host): Host) -> Response<Body> {

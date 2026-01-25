@@ -6,9 +6,10 @@ include!(concat!(env!("OUT_DIR"), "/csp_hashes.rs"));
 
 use axum::{
     body::Body,
-    http::{header, Request, Response},
+    http::{header, HeaderValue, Request, Response},
     middleware::Next,
 };
+use tracing::error;
 
 /// CSP middleware that adds Content-Security-Policy header to all responses
 pub async fn csp_middleware(request: Request<Body>, next: Next) -> Response<Body> {
@@ -33,12 +34,14 @@ pub async fn csp_middleware(request: Request<Body>, next: Next) -> Response<Body
         style_src_hashes()
     );
 
-    response.headers_mut().insert(
-        header::CONTENT_SECURITY_POLICY,
-        csp_value
-            .parse()
-            .expect("CSP header value should always be valid ASCII"),
-    );
+    match HeaderValue::from_str(&csp_value) {
+        Ok(value) => {
+            response.headers_mut().insert(header::CONTENT_SECURITY_POLICY, value);
+        }
+        Err(err) => {
+            error!(error = %err, "Failed to build CSP header");
+        }
+    }
 
     response
 }
