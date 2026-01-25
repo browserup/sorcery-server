@@ -118,6 +118,9 @@ async fn subdomain_aware_root(
             let new_uri = format!("https://{}{}", state.base_domain, uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/"));
             Redirect::permanent(&new_uri).into_response()
         }
+        SubdomainMode::GetSorcery => {
+            routes::getsorcery_landing().await.into_response()
+        }
         SubdomainMode::DirectProtocol | SubdomainMode::EnterpriseTenant(_) => {
             routes::root_handler(query).await.into_response()
         }
@@ -135,6 +138,13 @@ async fn subdomain_aware_fallback(
         SubdomainMode::WwwRedirect => {
             let new_uri = format!("https://{}{}", state.base_domain, uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/"));
             Redirect::permanent(&new_uri).into_response()
+        }
+        SubdomainMode::GetSorcery => {
+            match uri.path() {
+                "/install.sh" => routes::install_script_handler().await,
+                "/chrome" => routes::chrome_redirect_handler().await.into_response(),
+                _ => (StatusCode::NOT_FOUND, "Not Found").into_response()
+            }
         }
         SubdomainMode::DirectProtocol | SubdomainMode::EnterpriseTenant(_) => {
             routes::catchall_handler(uri, query).await.into_response()

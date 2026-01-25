@@ -6,6 +6,7 @@ pub enum SubdomainMode {
     DirectProtocol,
     WwwRedirect,
     EnterpriseTenant(String),
+    GetSorcery,
 }
 
 pub fn detect_mode(host: &str, uri: &Uri) -> SubdomainMode {
@@ -32,6 +33,7 @@ fn check_query_override(uri: &Uri) -> Option<SubdomainMode> {
             return Some(match value {
                 "www" => SubdomainMode::WwwRedirect,
                 "direct" | "" => SubdomainMode::DirectProtocol,
+                "getsorcery" => SubdomainMode::GetSorcery,
                 tenant => SubdomainMode::EnterpriseTenant(tenant.to_string()),
             });
         }
@@ -41,6 +43,11 @@ fn check_query_override(uri: &Uri) -> Option<SubdomainMode> {
 
 fn detect_mode_from_host(host: &str) -> SubdomainMode {
     let host_without_port = strip_port(host);
+
+    // Check for getsorcery.com domain
+    if is_getsorcery_host(host_without_port) {
+        return SubdomainMode::GetSorcery;
+    }
 
     let parts: Vec<&str> = host_without_port.split('.').collect();
 
@@ -61,6 +68,10 @@ fn detect_mode_from_host(host: &str) -> SubdomainMode {
         "www" => SubdomainMode::WwwRedirect,
         tenant => SubdomainMode::EnterpriseTenant(tenant.to_string()),
     }
+}
+
+fn is_getsorcery_host(host: &str) -> bool {
+    host == "getsorcery.com" || host == "www.getsorcery.com"
 }
 
 #[cfg(test)]
@@ -140,6 +151,38 @@ mod tests {
         assert_eq!(
             detect_mode("127.0.0.1:3000", &uri("/?_subdomain=acme")),
             SubdomainMode::EnterpriseTenant("acme".to_string())
+        );
+    }
+
+    #[test]
+    fn test_getsorcery_com_is_getsorcery() {
+        assert_eq!(
+            detect_mode("getsorcery.com", &uri("/")),
+            SubdomainMode::GetSorcery
+        );
+    }
+
+    #[test]
+    fn test_www_getsorcery_com_is_getsorcery() {
+        assert_eq!(
+            detect_mode("www.getsorcery.com", &uri("/")),
+            SubdomainMode::GetSorcery
+        );
+    }
+
+    #[test]
+    fn test_getsorcery_com_with_port() {
+        assert_eq!(
+            detect_mode("getsorcery.com:443", &uri("/")),
+            SubdomainMode::GetSorcery
+        );
+    }
+
+    #[test]
+    fn test_query_override_getsorcery() {
+        assert_eq!(
+            detect_mode("localhost:3000", &uri("/?_subdomain=getsorcery")),
+            SubdomainMode::GetSorcery
         );
     }
 }

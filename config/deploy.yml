@@ -11,7 +11,10 @@ servers:
 
 proxy:
   ssl: true
-  host: srcuri.com
+  hosts:
+    - srcuri.com
+    - getsorcery.com
+    - www.getsorcery.com
   app_port: 8080
   healthcheck:
     path: /health
