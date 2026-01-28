@@ -4,6 +4,7 @@ use axum::{
     http::HeaderMap,
     debug_handler,
 };
+use std::sync::Arc;
 use crate::tenant::config::TenantConfig;
 use crate::AppState;
 
@@ -11,7 +12,7 @@ use crate::AppState;
 pub async fn wellknown_handler(
     State(state): State<AppState>,
     headers: HeaderMap,
-) -> Json<TenantConfig> {
+) -> Json<Arc<TenantConfig>> {
     let host = headers
         .get("host")
         .and_then(|h| h.to_str().ok())
@@ -19,5 +20,5 @@ pub async fn wellknown_handler(
 
     let subdomain = crate::tenant::TenantManager::extract_subdomain(host);
     let config = state.tenant_manager.get_config(&subdomain).await;
-    Json((*config).clone())
+    Json(config)
 }

@@ -6,14 +6,15 @@ license = "AGPL-3.0"
 repository = "https://github.com/sorcery-app/sorcery-server"
 
 [dependencies]
-axum = { version = "0.7", features = ["macros"] }
+axum = { version = "0.8", features = ["macros"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
 tokio = { version = "1", features = ["full"] }
-tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
-tower_governor = "0.4"
+tower-http = { version = "0.6", features = ["cors", "fs", "trace"] }
+tower_governor = "0.8"
 anyhow = "1"
-serde = { version = "1", features = ["derive"] }
+serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
-askama = "0.12"
+askama = "0.15"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2"
@@ -28,5 +29,5 @@ base64 = "0.22"
 regex = "1"
 
 [dev-dependencies]
-tower = { version = "0.4", features = ["util"] }
+tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
