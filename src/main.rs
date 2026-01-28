@@ -5,8 +5,9 @@ use axum::{
     response::{Response, Redirect, IntoResponse},
     body::Body,
     http::{StatusCode, header, HeaderValue, Uri},
-    extract::{Host, Query},
+    extract::Query,
 };
+use axum_extra::extract::Host;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -73,7 +74,7 @@ async fn run() -> anyhow::Result<()> {
         .fallback(get(subdomain_aware_fallback))
         .with_state(state)
         .layer(axum::middleware::from_fn(csp::csp_middleware))
-        .layer(GovernorLayer { config: governor_config })
+        .layer(GovernorLayer::new(governor_config))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -82,22 +83,27 @@ async fn run() -> anyhow::Result<()> {
         )
         .layer(TraceLayer::new_for_http());
 
-    let port = std::env::var("PORT")
+    let port: u16 = std::env::var("PORT")
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(3000);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let host: std::net::IpAddr = std::env::var("HOST")
+        .ok()
+        .and_then(|h| h.parse().ok())
+        .unwrap_or_else(|| [127, 0, 0, 1].into());
+
+    let addr = SocketAddr::from((host, port));
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .with_context(|| format!("bind to {}", addr))?;
 
-    tracing::info!("Sorcery Server running");
-    tracing::info!("Base URL: http://localhost:{}", port);
-    tracing::info!("Provider: http://localhost:{}/github.com/owner/repo/blob/main/file.rs#L42", port);
-    tracing::info!("Mirror: http://localhost:{}/repo/src/lib.rs:42?branch=main", port);
-    tracing::info!("Health: http://localhost:{}/health", port);
+    tracing::info!("Sorcery Server listening on {}", addr);
+    tracing::info!("Base URL: http://{}", addr);
+    tracing::info!("Provider: http://{}/github.com/owner/repo/blob/main/file.rs#L42", addr);
+    tracing::info!("Mirror: http://{}/repo/src/lib.rs:42?branch=main", addr);
+    tracing::info!("Health: http://{}/health", addr);
 
     axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
         .await
