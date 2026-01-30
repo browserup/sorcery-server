@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supported Editors/IDEs - Sorcery</title>
+    <meta name="description" content="Sorcery supports 27 editors and IDEs including VS Code, JetBrains, Neovim, Emacs, and more.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(180deg, #f8f8fa 0%, #e8e8ec 100%);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        .header-brand svg { width: 32px; height: 32px; }
+        .header-brand span { font-size: 1.125rem; font-weight: 600; color: #1a1a1f; }
+        .header-links { display: flex; gap: 1.5rem; font-size: 0.875rem; }
+        .header-links a { color: #555; text-decoration: none; }
+        .header-links a:hover { color: #9333ea; }
+
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+        .back-link:hover { color: #a78bfa; }
+        .back-link svg { width: 16px; height: 16px; }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #9333ea, #c026d3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2.5rem;
+            font-size: 1.0625rem;
+        }
+
+        .category {
+            margin-bottom: 2.5rem;
+        }
+        .category h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .editor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+        .editor-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+        }
+        .editor-item .name {
+            font-weight: 500;
+            font-size: 0.9375rem;
+        }
+        .editor-item .id {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .platform-note {
+            font-size: 0.75rem;
+            color: #a78bfa;
+            margin-left: auto;
+        }
+
+        .footer {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .footer a { color: rgba(255, 255, 255, 0.5); text-decoration: none; }
+        .footer a:hover { color: #a78bfa; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="/" class="header-brand">
+            <svg viewBox="0 0 512 512" fill="none">
+                <polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/>
+                <polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/>
+                <polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/>
+                <defs>
+                    <radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#9333ea"/>
+                        <stop offset="70%" stop-color="#c026d3"/>
+                        <stop offset="100%" stop-color="#f59e0b"/>
+                    </radialGradient>
+                </defs>
+            </svg>
+            <span>Sorcery</span>
+        </a>
+        <nav class="header-links">
+            <a href="https://github.com/browserup/sorcery-desktop#readme">Docs</a>
+            <a href="https://github.com/browserup/sorcery-desktop">GitHub</a>
+        </nav>
+    </header>
+
+    <main class="content">
+        <a href="/" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to home
+        </a>
+
+        <h1>27 Supported Editors/IDEs</h1>
+        <p class="subtitle">Sorcery works with all major code editors and IDEs. Click any srcuri:// link and it opens in your preferred editor.</p>
+
+        <section class="category">
+            <h2>VS Code Family</h2>
+            <div class="editor-grid">
+                <div class="editor-item">
+                    <div><div class="name">Visual Studio Code</div><div class="id">vscode</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Cursor</div><div class="id">cursor</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">VSCodium</div><div class="id">vscodium</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Roo Cline</div><div class="id">roo</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Windsurf</div><div class="id">windsurf</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="category">
+            <h2>JetBrains Suite</h2>
+            <div class="editor-grid">
+                <div class="editor-item">
+                    <div><div class="name">IntelliJ IDEA</div><div class="id">idea</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">WebStorm</div><div class="id">webstorm</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">PyCharm</div><div class="id">pycharm</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">PhpStorm</div><div class="id">phpstorm</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">RubyMine</div><div class="id">rubymine</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">GoLand</div><div class="id">goland</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">CLion</div><div class="id">clion</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Rider</div><div class="id">rider</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">DataGrip</div><div class="id">datagrip</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Android Studio</div><div class="id">androidstudio</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Fleet</div><div class="id">fleet</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="category">
+            <h2>Terminal Editors</h2>
+            <div class="editor-grid">
+                <div class="editor-item">
+                    <div><div class="name">Neovim</div><div class="id">neovim</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Vim</div><div class="id">vim</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Emacs</div><div class="id">emacs</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Kakoune</div><div class="id">kakoune</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Micro</div><div class="id">micro</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Nano</div><div class="id">nano</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="category">
+            <h2>GUI Editors</h2>
+            <div class="editor-grid">
+                <div class="editor-item">
+                    <div><div class="name">Zed</div><div class="id">zed</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Sublime Text</div><div class="id">sublime</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Kate</div><div class="id">kate</div></div>
+                </div>
+                <div class="editor-item">
+                    <div><div class="name">Gedit</div><div class="id">gedit</div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="category">
+            <h2>Platform-Specific</h2>
+            <div class="editor-grid">
+                <div class="editor-item">
+                    <div><div class="name">Xcode</div><div class="id">xcode</div></div>
+                    <span class="platform-note">macOS</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Sorcery. Open source under MIT license.</p>
+    </footer>
+</body>
+</html>

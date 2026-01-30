@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supported Web Platforms - Sorcery</title>
+    <meta name="description" content="Sorcery browser extension works with GitHub, GitLab, Bitbucket, Sentry, Datadog, New Relic, and more.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(180deg, #f8f8fa 0%, #e8e8ec 100%);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+        .header-brand svg { width: 32px; height: 32px; }
+        .header-brand span { font-size: 1.125rem; font-weight: 600; color: #1a1a1f; }
+        .header-links { display: flex; gap: 1.5rem; font-size: 0.875rem; }
+        .header-links a { color: #555; text-decoration: none; }
+        .header-links a:hover { color: #9333ea; }
+
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+        .back-link:hover { color: #a78bfa; }
+        .back-link svg { width: 16px; height: 16px; }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #9333ea, #c026d3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 2.5rem;
+            font-size: 1.0625rem;
+        }
+
+        .platform-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .platform-card {
+            padding: 1.25rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+        }
+        .platform-card h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .platform-card .hosts {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 0.8125rem;
+            color: #a78bfa;
+            margin-bottom: 0.75rem;
+        }
+        .platform-card p {
+            font-size: 0.9375rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 0.5rem;
+        }
+        .feature-list {
+            list-style: none;
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .feature-list li {
+            padding: 0.25rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+        }
+        .feature-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #22c55e;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            margin-top: 2.5rem;
+        }
+        .section-title:first-of-type { margin-top: 0; }
+
+        .how-it-works {
+            margin-top: 3rem;
+            padding: 1.5rem;
+            background: rgba(147, 51, 234, 0.08);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            border-radius: 10px;
+        }
+        .how-it-works h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+        }
+        .how-it-works ol {
+            margin-left: 1.25rem;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9375rem;
+        }
+        .how-it-works li {
+            padding: 0.375rem 0;
+        }
+
+        .footer {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            text-align: center;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .footer a { color: rgba(255, 255, 255, 0.5); text-decoration: none; }
+        .footer a:hover { color: #a78bfa; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="/" class="header-brand">
+            <svg viewBox="0 0 512 512" fill="none">
+                <polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/>
+                <polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/>
+                <polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/>
+                <defs>
+                    <radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#9333ea"/>
+                        <stop offset="70%" stop-color="#c026d3"/>
+                        <stop offset="100%" stop-color="#f59e0b"/>
+                    </radialGradient>
+                </defs>
+            </svg>
+            <span>Sorcery</span>
+        </a>
+        <nav class="header-links">
+            <a href="https://github.com/browserup/sorcery-desktop#readme">Docs</a>
+            <a href="https://github.com/browserup/sorcery-desktop">GitHub</a>
+        </nav>
+    </header>
+
+    <main class="content">
+        <a href="/" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Back to home
+        </a>
+
+        <h1>20+ Supported Web Platforms</h1>
+        <p class="subtitle">The Sorcery browser extension makes file paths and stack traces clickable. Command-click (or Ctrl-click) any file reference to open it in your local editor.</p>
+
+        <h3 class="section-title">Code Hosting (7)</h3>
+        <div class="platform-list">
+            <div class="platform-card">
+                <h2>GitHub</h2>
+                <div class="hosts">github.com, github.dev, codespaces.new</div>
+                <p>Works with source files, pull requests, issues, and GitHub Codespaces.</p>
+                <ul class="feature-list">
+                    <li>File browser (blob/tree views)</li>
+                    <li>Blame view</li>
+                    <li>Pull request diffs</li>
+                    <li>Issue references</li>
+                    <li>Line number anchors (#L42)</li>
+                </ul>
+            </div>
+
+            <div class="platform-card">
+                <h2>GitLab</h2>
+                <div class="hosts">gitlab.com, self-hosted instances</div>
+                <p>Full support for GitLab.com and self-hosted GitLab installations.</p>
+                <ul class="feature-list">
+                    <li>File browser (/-/blob/, /-/tree/)</li>
+                    <li>Blame view</li>
+                    <li>Merge request diffs</li>
+                    <li>Web IDE paths</li>
+                    <li>Line number anchors (#L42)</li>
+                </ul>
+            </div>
+
+            <div class="platform-card">
+                <h2>Bitbucket</h2>
+                <div class="hosts">bitbucket.org</div>
+                <p>Navigate from Bitbucket source views directly to your editor.</p>
+                <ul class="feature-list">
+                    <li>Source browser (/src/)</li>
+                    <li>Branch, tag, and commit paths</li>
+                    <li>Line anchors (#lines-5 or #lines-5:10)</li>
+                </ul>
+            </div>
+
+            <div class="platform-card">
+                <h2>Azure DevOps</h2>
+                <div class="hosts">dev.azure.com, *.visualstudio.com</div>
+                <p>Works with Azure Repos in both short and long URL formats.</p>
+                <ul class="feature-list">
+                    <li>Git repository browser (/_git/)</li>
+                    <li>Path and version query parameters</li>
+                    <li>Branch, tag, and commit references</li>
+                </ul>
+            </div>
+
+            <div class="platform-card">
+                <h2>Gitea</h2>
+                <div class="hosts">gitea.com, self-hosted instances</div>
+                <p>Support for Gitea.com and self-hosted Gitea servers.</p>
+                <ul class="feature-list">
+                    <li>Source browser (/src/branch/, /src/tag/)</li>
+                    <li>Commit views</li>
+                    <li>Line number anchors (#L42)</li>
+                </ul>
+            </div>
+
+            <div class="platform-card">
+                <h2>Codeberg</h2>
+                <div class="hosts">codeberg.org</div>
+                <p>Codeberg is a Gitea-based platform with full support.</p>
+                <ul class="feature-list">
+                    <li>Source browser</li>
+                    <li>Branch and tag navigation</li>
+                    <li>Line number anchors (#L42)</li>
+                </ul>
+            </div>
+
+            <div class="platform-card">
+                <h2>Sourcegraph</h2>
+                <div class="hosts">sourcegraph.com, self-hosted instances</div>
+                <p>Code search and navigation platform with full click-to-open support.</p>
+                <ul class="feature-list">
+                    <li>Code search results</li>
+                    <li>Repository browser</li>
+                    <li>Cross-repository navigation</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3 class="section-title">Observability & APM (12)</h3>
+        <div class="platform-list">
+            <div class="platform-card">
+                <h2>Sentry</h2>
+                <div class="hosts">sentry.io, self-hosted</div>
+                <p>Error tracking platform. Click stack trace frames to open the source file.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Datadog</h2>
+                <div class="hosts">app.datadoghq.com</div>
+                <p>APM and monitoring. Navigate from error traces to your local code.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>New Relic</h2>
+                <div class="hosts">one.newrelic.com</div>
+                <p>APM and observability. Click stack traces in error analytics.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Elastic APM</h2>
+                <div class="hosts">Kibana instances</div>
+                <p>Elasticsearch APM stack trace navigation.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Dynatrace</h2>
+                <div class="hosts">*.dynatrace.com</div>
+                <p>Application monitoring with stack trace click-to-open.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Bugsnag</h2>
+                <div class="hosts">app.bugsnag.com</div>
+                <p>Error monitoring platform with source file navigation.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Rollbar</h2>
+                <div class="hosts">rollbar.com</div>
+                <p>Error tracking with clickable stack trace frames.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Honeybadger</h2>
+                <div class="hosts">app.honeybadger.io</div>
+                <p>Exception monitoring for Ruby, Elixir, and more.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Honeycomb</h2>
+                <div class="hosts">ui.honeycomb.io</div>
+                <p>Observability platform with trace navigation.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>Raygun</h2>
+                <div class="hosts">app.raygun.com</div>
+                <p>Crash reporting with stack trace click-to-open.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>AppSignal</h2>
+                <div class="hosts">appsignal.com</div>
+                <p>Application monitoring for Ruby, Elixir, Node.js.</p>
+            </div>
+
+            <div class="platform-card">
+                <h2>LogRocket</h2>
+                <div class="hosts">app.logrocket.com</div>
+                <p>Session replay and error tracking with source navigation.</p>
+            </div>
+        </div>
+
+        <div class="how-it-works">
+            <h2>How it works</h2>
+            <ol>
+                <li>Install the Sorcery desktop app and browser extension</li>
+                <li>Browse code on any supported platform</li>
+                <li>Command-click (Mac) or Ctrl-click (Windows/Linux) any file path</li>
+                <li>The file opens in your configured editor at the exact line</li>
+            </ol>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Sorcery. Open source under MIT license.</p>
+    </footer>
+</body>
+</html>

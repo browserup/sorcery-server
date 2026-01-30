@@ -1,24 +1,30 @@
 use anyhow::Context;
 use axum::{
+    body::Body,
+    extract::Query,
+    http::{header, HeaderValue, StatusCode, Uri},
+    response::{IntoResponse, Redirect, Response},
     routing::get,
     Router,
-    response::{Response, Redirect, IntoResponse},
-    body::Body,
-    http::{StatusCode, header, HeaderValue, Uri},
-    extract::Query,
 };
 use axum_extra::extract::Host;
+use httpdate::HttpDate;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
-use httpdate::HttpDate;
-use tower_http::cors::{CorsLayer, Any};
+use tower_governor::{
+    governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor, GovernorLayer,
+};
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use sorcery_server::{AppState, csp, routes, tenant, subdomain::{self, SubdomainMode}};
+use sorcery_server::{
+    csp, routes,
+    subdomain::{self, SubdomainMode},
+    tenant, AppState,
+};
 
 const ONE_DAY_SECS: u64 = 86_400;
 const NINETY_DAYS_SECS: u64 = 7_776_000;
@@ -44,12 +50,14 @@ async fn run() -> anyhow::Result<()> {
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("sorcery-server/tenants"));
 
-    let base_domain = std::env::var("BASE_DOMAIN")
-        .unwrap_or_else(|_| "srcuri.com".to_string());
+    let base_domain = std::env::var("BASE_DOMAIN").unwrap_or_else(|_| "srcuri.com".to_string());
 
     let tenant_manager = Arc::new(tenant::TenantManager::new(tenants_dir));
 
-    let state = AppState { tenant_manager, base_domain };
+    let state = AppState {
+        tenant_manager,
+        base_domain,
+    };
 
     // Rate limiting: 60 requests per minute per IP (1 request per second on average)
     let governor_config = Arc::new(
@@ -58,7 +66,7 @@ async fn run() -> anyhow::Result<()> {
             .burst_size(60)
             .key_extractor(SmartIpKeyExtractor)
             .finish()
-            .context("build rate limiter config")?
+            .context("build rate limiter config")?,
     );
 
     let app = Router::new()
@@ -101,13 +109,19 @@ async fn run() -> anyhow::Result<()> {
 
     tracing::info!("Sorcery Server listening on {}", addr);
     tracing::info!("Base URL: http://{}", addr);
-    tracing::info!("Provider: http://{}/github.com/owner/repo/blob/main/file.rs#L42", addr);
+    tracing::info!(
+        "Provider: http://{}/github.com/owner/repo/blob/main/file.rs#L42",
+        addr
+    );
     tracing::info!("Mirror: http://{}/repo/src/lib.rs:42?branch=main", addr);
     tracing::info!("Health: http://{}/health", addr);
 
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-        .await
-        .context("server error")?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .context("server error")?;
 
     Ok(())
 }
@@ -121,12 +135,14 @@ async fn subdomain_aware_root(
     let mode = subdomain::detect_mode(&host, &uri);
     match mode {
         SubdomainMode::WwwRedirect => {
-            let new_uri = format!("https://{}{}", state.base_domain, uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/"));
+            let new_uri = format!(
+                "https://{}{}",
+                state.base_domain,
+                uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/")
+            );
             Redirect::permanent(&new_uri).into_response()
         }
-        SubdomainMode::GetSorcery => {
-            routes::getsorcery_landing().await.into_response()
-        }
+        SubdomainMode::GetSorcery => routes::getsorcery_landing().await.into_response(),
         SubdomainMode::DirectProtocol | SubdomainMode::EnterpriseTenant(_) => {
             routes::root_handler(query).await.into_response()
         }
@@ -142,16 +158,21 @@ async fn subdomain_aware_fallback(
     let mode = subdomain::detect_mode(&host, &uri);
     match mode {
         SubdomainMode::WwwRedirect => {
-            let new_uri = format!("https://{}{}", state.base_domain, uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/"));
+            let new_uri = format!(
+                "https://{}{}",
+                state.base_domain,
+                uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/")
+            );
             Redirect::permanent(&new_uri).into_response()
         }
-        SubdomainMode::GetSorcery => {
-            match uri.path() {
-                "/install.sh" => routes::install_script_handler().await,
-                "/chrome" => routes::chrome_redirect_handler().await.into_response(),
-                _ => (StatusCode::NOT_FOUND, "Not Found").into_response()
-            }
-        }
+        SubdomainMode::GetSorcery => match uri.path() {
+            "/install.sh" => routes::install_script_handler().await,
+            "/chrome" => routes::chrome_redirect_handler().await.into_response(),
+            "/support/editors" => routes::getsorcery_editors().await.into_response(),
+            "/support/platforms" => routes::getsorcery_platforms().await.into_response(),
+            "/support/frameworks" => routes::getsorcery_frameworks().await.into_response(),
+            _ => (StatusCode::NOT_FOUND, "Not Found").into_response(),
+        },
         SubdomainMode::DirectProtocol | SubdomainMode::EnterpriseTenant(_) => {
             routes::catchall_handler(uri, query).await.into_response()
         }

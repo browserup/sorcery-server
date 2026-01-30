@@ -4,7 +4,11 @@ pub mod passthrough;
 pub mod templates;
 pub mod wellknown;
 
-pub use getsorcery::{landing_handler as getsorcery_landing, install_script_handler, chrome_redirect_handler};
+pub use getsorcery::{
+    chrome_redirect_handler, editors_handler as getsorcery_editors,
+    frameworks_handler as getsorcery_frameworks, install_script_handler,
+    landing_handler as getsorcery_landing, platforms_handler as getsorcery_platforms,
+};
 pub use open::open_handler;
-pub use passthrough::{root_handler, catchall_handler, PassthroughQuery, MirrorQuery};
+pub use passthrough::{catchall_handler, root_handler, MirrorQuery, PassthroughQuery};
 pub use wellknown::wellknown_handler;
