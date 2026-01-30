@@ -36,7 +36,9 @@ pub async fn csp_middleware(request: Request<Body>, next: Next) -> Response<Body
 
     match HeaderValue::from_str(&csp_value) {
         Ok(value) => {
-            response.headers_mut().insert(header::CONTENT_SECURITY_POLICY, value);
+            response
+                .headers_mut()
+                .insert(header::CONTENT_SECURITY_POLICY, value);
         }
         Err(err) => {
             error!(error = %err, "Failed to build CSP header");

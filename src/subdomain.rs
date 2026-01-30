@@ -1,5 +1,5 @@
-use axum::http::Uri;
 use crate::strip_port;
+use axum::http::Uri;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SubdomainMode {
@@ -125,7 +125,10 @@ mod tests {
     #[test]
     fn test_query_override_with_other_params() {
         assert_eq!(
-            detect_mode("localhost:3000", &uri("/path?foo=bar&_subdomain=acme&baz=qux")),
+            detect_mode(
+                "localhost:3000",
+                &uri("/path?foo=bar&_subdomain=acme&baz=qux")
+            ),
             SubdomainMode::EnterpriseTenant("acme".to_string())
         );
     }

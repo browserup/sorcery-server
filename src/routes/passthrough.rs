@@ -1,14 +1,14 @@
+use super::templates::{ErrorTemplate, MirrorTemplate};
+use crate::parsing::{extract_path_line_suffix, parse_remote_url, ParseError, SrcuriTarget};
 use askama::Template;
 use axum::{
     extract::Query,
-    http::{Uri, header, HeaderValue},
-    response::{Html, Redirect, IntoResponse, Response},
+    http::{header, HeaderValue, Uri},
+    response::{Html, IntoResponse, Redirect, Response},
 };
 use serde::Deserialize;
 use std::fmt::Write;
 use tracing::error;
-use crate::parsing::{parse_remote_url, extract_path_line_suffix, ParseError, SrcuriTarget};
-use super::templates::{MirrorTemplate, ErrorTemplate};
 
 /// URL mode based on authority (first path segment)
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -79,7 +79,10 @@ fn is_valid_branch_name(name: &str) -> bool {
         && name.len() <= 128
         && name.chars().all(|c| {
             c.is_ascii_alphanumeric()
-                || matches!(c, '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=')
+                || matches!(
+                    c,
+                    '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '='
+                )
         })
         && !name.starts_with('/')
         && !name.ends_with('/')
@@ -95,9 +98,9 @@ fn is_valid_remote_url(url: &str) -> bool {
 
     !path.is_empty()
         && path.len() <= 256
-        && path.chars().all(|c| {
-            c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ':' | '@')
-        })
+        && path
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ':' | '@'))
         && !path.contains("..")
         && !path.contains("//")
         && !path.starts_with('/')
@@ -125,7 +128,11 @@ fn is_valid_file_path(path: &str) -> bool {
 
     // Check for Windows drive letter pattern (X:/ where X is A-Z)
     let is_windows_path = path.len() >= 3
-        && path.chars().next().map(|c| c.is_ascii_alphabetic()).unwrap_or(false)
+        && path
+            .chars()
+            .next()
+            .map(|c| c.is_ascii_alphabetic())
+            .unwrap_or(false)
         && path.chars().nth(1) == Some(':')
         && path.chars().nth(2) == Some('/');
 
@@ -136,7 +143,10 @@ fn is_valid_file_path(path: &str) -> bool {
         }
 
         if ch.is_ascii_alphanumeric()
-            || matches!(ch, '-' | '_' | '.' | '/' | ' ' | '@' | '+' | '(' | ')' | '[' | ']' | '~')
+            || matches!(
+                ch,
+                '-' | '_' | '.' | '/' | ' ' | '@' | '+' | '(' | ')' | '[' | ']' | '~'
+            )
         {
             continue;
         }
@@ -168,10 +178,7 @@ pub async fn root_handler(Query(params): Query<PassthroughQuery>) -> Response {
 
 /// Catch-all handler for path-based URLs
 /// Detects URL mode from authority and routes accordingly
-pub async fn catchall_handler(
-    uri: Uri,
-    Query(params): Query<MirrorQuery>,
-) -> Response {
+pub async fn catchall_handler(uri: Uri, Query(params): Query<MirrorQuery>) -> Response {
     let path = uri.path().to_string();
 
     // Detect URL mode from first path segment
@@ -183,7 +190,11 @@ pub async fn catchall_handler(
             // Serve provider interstitial page (client-side to preserve fragments)
             serve_provider_page()
         }
-        UrlMode::Absolute | UrlMode::Relative | UrlMode::Any | UrlMode::ExplicitWorkspace | UrlMode::ImplicitWorkspace => {
+        UrlMode::Absolute
+        | UrlMode::Relative
+        | UrlMode::Any
+        | UrlMode::ExplicitWorkspace
+        | UrlMode::ImplicitWorkspace => {
             // Check if implicit workspace path looks like a provider URL
             if mode == UrlMode::ImplicitWorkspace && is_provider_path(&path) {
                 serve_provider_page()
@@ -288,7 +299,10 @@ fn serve_mirror_page(path: &str, mode: UrlMode, params: MirrorQuery) -> Response
     let target = parse_mirror_path(&decoded_path, mode, params);
     // Validate extracted repo name (workspace) - only for workspace modes
     if !target.repo_name.is_empty()
-        && matches!(mode, UrlMode::ImplicitWorkspace | UrlMode::ExplicitWorkspace)
+        && matches!(
+            mode,
+            UrlMode::ImplicitWorkspace | UrlMode::ExplicitWorkspace
+        )
         && !is_valid_workspace_name(&target.repo_name)
     {
         return render_invalid_param_error("workspace", &target.repo_name);
@@ -306,7 +320,18 @@ fn render_invalid_ref_error(param_type: &str, ref_name: &str) -> Response {
     let safe_display: String = ref_name
         .chars()
         .take(100)
-        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=' | ' ') { c } else { '?' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric()
+                || matches!(
+                    c,
+                    '-' | '_' | '.' | '/' | '@' | ',' | '(' | ')' | '+' | '#' | '=' | ' '
+                )
+            {
+                c
+            } else {
+                '?'
+            }
+        })
         .collect();
 
     let allowed_chars = match param_type {
@@ -333,7 +358,13 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
     let safe_display: String = value
         .chars()
         .take(100)
-        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ':' | '@' | ' ') { c } else { '?' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.' | '/' | ':' | '@' | ' ') {
+                c
+            } else {
+                '?'
+            }
+        })
         .collect();
 
     let message = match param_type {
@@ -508,7 +539,10 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
 
     // Generate OG description
     let og_description = if !display_path.is_empty() {
-        format!("{}{} on {} branch", display_path, display_line, display_branch)
+        format!(
+            "{}{} on {} branch",
+            display_path, display_line, display_branch
+        )
     } else if !target.repo_name.is_empty() {
         format!("{} repository", target.repo_name)
     } else {
@@ -539,14 +573,12 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
         header::CACHE_CONTROL,
         HeaderValue::from_static("no-cache, no-store, must-revalidate"),
     );
-    response.headers_mut().insert(
-        header::PRAGMA,
-        HeaderValue::from_static("no-cache"),
-    );
-    response.headers_mut().insert(
-        header::EXPIRES,
-        HeaderValue::from_static("0"),
-    );
+    response
+        .headers_mut()
+        .insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
+    response
+        .headers_mut()
+        .insert(header::EXPIRES, HeaderValue::from_static("0"));
     response
 }
 
@@ -566,11 +598,13 @@ fn render_error(error: ParseError) -> Html<String> {
 /// Accepts both "github.com/owner/repo" and "https://github.com/owner/repo".
 /// Returns just "github.com/owner/repo" for consistent internal storage.
 fn normalize_remote(remote: Option<String>) -> String {
-    remote.map(|r| {
-        r.trim_start_matches("https://")
-            .trim_start_matches("http://")
-            .to_string()
-    }).unwrap_or_default()
+    remote
+        .map(|r| {
+            r.trim_start_matches("https://")
+                .trim_start_matches("http://")
+                .to_string()
+        })
+        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -910,13 +944,19 @@ mod tests {
     #[test]
     fn safe_href_http_allowed() {
         assert_eq!(safe_href_url("http://example.com"), "http://example.com");
-        assert_eq!(safe_href_url("http://github.com/owner/repo"), "http://github.com/owner/repo");
+        assert_eq!(
+            safe_href_url("http://github.com/owner/repo"),
+            "http://github.com/owner/repo"
+        );
     }
 
     #[test]
     fn safe_href_https_allowed() {
         assert_eq!(safe_href_url("https://example.com"), "https://example.com");
-        assert_eq!(safe_href_url("https://github.com/owner/repo"), "https://github.com/owner/repo");
+        assert_eq!(
+            safe_href_url("https://github.com/owner/repo"),
+            "https://github.com/owner/repo"
+        );
     }
 
     #[test]
@@ -935,7 +975,10 @@ mod tests {
 
     #[test]
     fn safe_href_data_blocked() {
-        assert_eq!(safe_href_url("data:text/html,<script>alert(1)</script>"), "");
+        assert_eq!(
+            safe_href_url("data:text/html,<script>alert(1)</script>"),
+            ""
+        );
         assert_eq!(safe_href_url("DATA:text/html,test"), "");
     }
 

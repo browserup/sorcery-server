@@ -1,12 +1,7 @@
-use axum::{
-    response::Json,
-    extract::State,
-    http::HeaderMap,
-    debug_handler,
-};
-use std::sync::Arc;
 use crate::tenant::config::TenantConfig;
 use crate::AppState;
+use axum::{debug_handler, extract::State, http::HeaderMap, response::Json};
+use std::sync::Arc;
 
 #[debug_handler]
 pub async fn wellknown_handler(

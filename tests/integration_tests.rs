@@ -9,7 +9,12 @@ async fn test_health_endpoint() {
     let app = create_test_app();
 
     let response = app
-        .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -72,7 +77,12 @@ async fn test_passthrough_github_redirect() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    let location = response.headers().get("location").unwrap().to_str().unwrap();
+    let location = response
+        .headers()
+        .get("location")
+        .unwrap()
+        .to_str()
+        .unwrap();
     assert!(location.contains("/repo/src/lib.rs:42"));
     assert!(location.contains("branch=main"));
     assert!(location.contains("remote=https://github.com/owner/repo"));
@@ -93,7 +103,12 @@ async fn test_passthrough_gitlab_redirect() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    let location = response.headers().get("location").unwrap().to_str().unwrap();
+    let location = response
+        .headers()
+        .get("location")
+        .unwrap()
+        .to_str()
+        .unwrap();
     assert!(location.contains("/project/lib/file.rb:12"));
     assert!(location.contains("remote=https://gitlab.com/group/project"));
 }
@@ -113,7 +128,12 @@ async fn test_passthrough_repo_only() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    let location = response.headers().get("location").unwrap().to_str().unwrap();
+    let location = response
+        .headers()
+        .get("location")
+        .unwrap()
+        .to_str()
+        .unwrap();
     assert!(location.contains("/repo?"));
     assert!(location.contains("remote=https://github.com/owner/repo"));
 }
@@ -151,7 +171,12 @@ async fn test_passthrough_without_https_prefix() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    let location = response.headers().get("location").unwrap().to_str().unwrap();
+    let location = response
+        .headers()
+        .get("location")
+        .unwrap()
+        .to_str()
+        .unwrap();
     assert!(location.contains("/repo/file.rs:10"));
     // Output should always have https:// prefix regardless of input format
     assert!(location.contains("remote=https://github.com/owner/repo"));
@@ -163,7 +188,12 @@ async fn test_csp_header_present() {
     let app = create_test_app();
 
     let response = app
-        .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -173,12 +203,30 @@ async fn test_csp_header_present() {
         .expect("CSP header should be present");
 
     let csp_str = csp.to_str().unwrap();
-    assert!(csp_str.contains("script-src"), "CSP should include script-src");
-    assert!(csp_str.contains("sha256-"), "CSP should include script hashes");
-    assert!(csp_str.contains("style-src"), "CSP should include style-src");
-    assert!(!csp_str.contains("unsafe-inline"), "CSP should not use unsafe-inline");
-    assert!(csp_str.contains("object-src 'none'"), "CSP should block plugins");
-    assert!(csp_str.contains("frame-ancestors 'none'"), "CSP should prevent clickjacking");
+    assert!(
+        csp_str.contains("script-src"),
+        "CSP should include script-src"
+    );
+    assert!(
+        csp_str.contains("sha256-"),
+        "CSP should include script hashes"
+    );
+    assert!(
+        csp_str.contains("style-src"),
+        "CSP should include style-src"
+    );
+    assert!(
+        !csp_str.contains("unsafe-inline"),
+        "CSP should not use unsafe-inline"
+    );
+    assert!(
+        csp_str.contains("object-src 'none'"),
+        "CSP should block plugins"
+    );
+    assert!(
+        csp_str.contains("frame-ancestors 'none'"),
+        "CSP should prevent clickjacking"
+    );
 }
 
 #[tokio::test]
@@ -397,15 +445,18 @@ async fn test_valid_branch_accepted() {
 }
 
 fn create_test_app() -> axum::Router {
+    use axum::routing::get;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use axum::routing::get;
 
     let tenants_dir = PathBuf::from("tenants");
     let tenant_manager = Arc::new(sorcery_server::tenant::TenantManager::new(tenants_dir));
     let base_domain = "srcuri.com".to_string();
 
-    let state = sorcery_server::AppState { tenant_manager, base_domain };
+    let state = sorcery_server::AppState {
+        tenant_manager,
+        base_domain,
+    };
 
     axum::Router::new()
         .route("/", get(sorcery_server::routes::root_handler))
@@ -417,7 +468,9 @@ fn create_test_app() -> axum::Router {
         .route("/health", get(|| async { "OK" }))
         .fallback(get(sorcery_server::routes::catchall_handler))
         .with_state(state)
-        .layer(axum::middleware::from_fn(sorcery_server::csp::csp_middleware))
+        .layer(axum::middleware::from_fn(
+            sorcery_server::csp::csp_middleware,
+        ))
 }
 
 #[tokio::test]
