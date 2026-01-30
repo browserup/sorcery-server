@@ -55,84 +55,112 @@
         }
 
         .hero {
-            max-width: 736px;
+            max-width: 800px;
             margin: 0 auto;
-            padding: 1.5rem 1.5rem 2rem;
+            padding: 2rem 1.5rem 2.5rem;
             text-align: center;
+            position: relative;
         }
 
-        .headline-container {
-            min-height: 4.5em;
-            margin-bottom: 0.5rem;
+        .scenario-card {
+            position: relative;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.08) 0%, rgba(192, 38, 211, 0.04) 100%);
+            border: 1px solid rgba(147, 51, 234, 0.2);
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            margin-bottom: 1.75rem;
+            overflow: hidden;
         }
-        .headline-action {
-            font-size: clamp(1.1rem, 3vw, 1.35rem);
+        .scenario-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(147, 51, 234, 0.5), transparent);
+        }
+        .scenario-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .scenario-action {
+            font-size: clamp(1.5rem, 4.5vw, 2rem);
             font-weight: 600;
             color: #fff;
-            min-height: 1.5em;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.75rem;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            position: relative;
+            z-index: 1;
         }
-        .headline-typed {
-            color: #e0d4fc;
+        .scenario-action.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
-        .cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1em;
-            background: #c4b5fd;
-            margin-left: 2px;
-            vertical-align: text-bottom;
-            animation: blink 1s step-end infinite;
+
+        .scenario-arrow {
+            display: flex;
+            justify-content: center;
+            margin: 0.5rem 0;
+            opacity: 0;
+            transition: opacity 0.3s ease 0.2s;
+            position: relative;
+            z-index: 1;
         }
-        @keyframes blink {
-            50% { opacity: 0; }
+        .scenario-arrow.visible {
+            opacity: 1;
         }
-        .headline-result {
-            font-size: clamp(1rem, 2.5vw, 1.125rem);
+        .scenario-arrow svg {
+            width: 24px;
+            height: 24px;
+            color: rgba(167, 139, 250, 0.6);
+        }
+
+        .scenario-result {
+            font-size: clamp(1.375rem, 4vw, 1.75rem);
             font-weight: 600;
             background: linear-gradient(90deg, #9333ea, #c026d3, #f59e0b);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             opacity: 0;
-            transition: opacity 0.6s ease;
+            transform: translateY(8px);
+            transition: opacity 0.5s ease 0.3s, transform 0.5s ease 0.3s;
+            position: relative;
+            z-index: 1;
         }
-        .headline-result.visible {
+        .scenario-result.visible {
             opacity: 1;
-        }
-        .headline-result.pulse {
-            animation: pulse 1.2s ease-in-out 2;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+            transform: translateY(0);
         }
 
-        .tagline {
-            font-size: 0.8125rem;
-            color: rgba(255, 255, 255, 0.4);
-            margin-bottom: 1rem;
-            letter-spacing: 0.02em;
-        }
-
-        .editors {
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.35);
-            margin-bottom: 1.5rem;
+        .download-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            flex-wrap: wrap;
         }
 
         .download-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.625rem;
+            gap: 0.75rem;
             padding: 0.875rem 1.75rem;
             background: linear-gradient(135deg, #9333ea, #c026d3);
             border: none;
             border-radius: 10px;
             color: white;
             font-family: inherit;
-            font-size: 1.0625rem;
-            font-weight: 600;
             text-decoration: none;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -142,21 +170,35 @@
             transform: translateY(-2px);
         }
         .download-btn svg {
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        .btn-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+        .btn-content #download-text {
+            font-size: 1.0625rem;
+            font-weight: 600;
+        }
+        .btn-subtitle {
+            font-size: 0.6875rem;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-top: 0.125rem;
         }
 
-        .platform-info {
-            margin-top: 0.75rem;
-            font-size: 0.8125rem;
-            color: rgba(255, 255, 255, 0.4);
-        }
-        .platform-info a {
+        .other-platforms {
             color: rgba(255, 255, 255, 0.5);
             text-decoration: none;
-            margin-left: 0.75rem;
+            font-size: 0.875rem;
+            padding: 0.5rem 0;
+            transition: color 0.15s;
         }
-        .platform-info a:hover {
+        .other-platforms:hover {
             color: #a78bfa;
         }
 
@@ -259,6 +301,17 @@
         .feature p {
             font-size: 0.75rem;
             color: rgba(255, 255, 255, 0.4);
+        }
+        .feature-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .feature-link:hover h4 {
+            color: #a78bfa;
+        }
+        .feature-link:hover p {
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .install-section {
@@ -397,27 +450,30 @@
     </header>
 
     <section class="hero">
-        <div class="headline-container">
-            <div class="headline-action">
-                <span class="headline-typed" id="typed"></span><span class="cursor"></span>
+        <div class="scenario-card">
+            <div class="scenario-action" id="action"></div>
+            <div class="scenario-arrow" id="arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
             </div>
-            <div class="headline-result" id="result"></div>
+            <div class="scenario-result" id="result"></div>
         </div>
-        <p class="tagline">Open source. Open standard.</p>
-        <p class="editors">VS Code, IntelliJ, Vim, Neovim, Emacs, Sublime, Zed, Cursor, and 20+ more</p>
 
-        <a href="#" class="download-btn" id="download-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7,10 12,15 17,10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span id="download-text">Download for macOS</span>
-        </a>
-        <p class="platform-info">
-            <span id="platform-note">Universal binary</span>
-            <a href="https://github.com/browserup/sorcery-desktop/releases/latest">Other platforms</a>
-        </p>
+        <div class="download-row">
+            <a href="#" class="download-btn" id="download-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7,10 12,15 17,10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span class="btn-content">
+                    <span id="download-text">Download for macOS</span>
+                    <span class="btn-subtitle" id="platform-note">Universal: Apple Silicon + Intel</span>
+                </span>
+            </a>
+            <a href="https://github.com/browserup/sorcery-desktop/releases/latest" class="other-platforms">Other platforms</a>
+        </div>
     </section>
 
     <div class="demo">
@@ -427,19 +483,18 @@
     </div>
 
     <section class="use-cases">
-        <h2>Why Sorcery?</h2>
+        <h2>Benefits</h2>
         <div class="use-case-list">
             <div class="use-case">
                 <div class="use-case-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        <polyline points="12,6 12,12 16,14"/>
                     </svg>
                 </div>
                 <div class="use-case-content">
-                    <h3>Error pages to source code</h3>
-                    <p>Click stack traces in Datadog, Sentry, or GitLab and open the exact line in your editor.</p>
+                    <h3>Reduce mean time to resolution</h3>
+                    <p>Click stack traces in Datadog, Sentry, or New Relic and open the exact line instantly. No searching, no copy-paste.</p>
                 </div>
             </div>
             <div class="use-case">
@@ -452,8 +507,8 @@
                     </svg>
                 </div>
                 <div class="use-case-content">
-                    <h3>Share code with teammates</h3>
-                    <p>Send a link that opens the right file, at the right line, in their editor of choice.</p>
+                    <h3>Editor-agnostic team sharing</h3>
+                    <p>Share one link that opens in each teammate's preferred editor. VS Code, IntelliJ, Neovim&mdash;everyone gets their own.</p>
                 </div>
             </div>
             <div class="use-case">
@@ -465,8 +520,19 @@
                     </svg>
                 </div>
                 <div class="use-case-content">
-                    <h3>Clickable terminal output</h3>
-                    <p>File paths in build errors or test failures become links that open your editor.</p>
+                    <h3>Eliminate context switching</h3>
+                    <p>Build errors, test failures, and code review comments become direct links to your editor. Stay in flow.</p>
+                </div>
+            </div>
+            <div class="use-case">
+                <div class="use-case-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <div class="use-case-content">
+                    <h3>Open source, open standard</h3>
+                    <p>MIT licensed. The srcuri:// protocol is documented and extensible. No vendor lock-in.</p>
                 </div>
             </div>
         </div>
@@ -476,16 +542,22 @@
         <h2>Works with your tools</h2>
         <div class="feature-grid">
             <div class="feature">
-                <h4>25+ Editors</h4>
-                <p>VS Code, JetBrains, Vim, Emacs, Sublime, Zed, and more</p>
+                <a href="/support/editors" class="feature-link">
+                    <h4>27 Editors/IDEs</h4>
+                    <p>VS Code, JetBrains, Neovim, Emacs, Sublime, Zed, and more</p>
+                </a>
             </div>
             <div class="feature">
-                <h4>Git-Aware</h4>
-                <p>Open files at specific commits, branches, or tags</p>
+                <a href="/support/platforms" class="feature-link">
+                    <h4>20+ Web Platforms</h4>
+                    <p>GitHub, GitLab, Sentry, Datadog, New Relic, and more</p>
+                </a>
             </div>
             <div class="feature">
-                <h4>Auto-Clone</h4>
-                <p>Clone repos on-demand when clicking external links</p>
+                <a href="/support/frameworks" class="feature-link">
+                    <h4>28 Error Pages</h4>
+                    <p>Next.js, Rails, Django, Laravel, Spring Boot, and more</p>
+                </a>
             </div>
         </div>
     </section>
@@ -542,7 +614,7 @@
         if (platform.includes('mac') || platform.includes('darwin')) {
             downloadBtn.href = baseUrl + 'Sorcery.Desktop_universal.dmg';
             downloadText.textContent = 'Download for macOS';
-            platformNote.textContent = 'Universal binary for Apple Silicon and Intel';
+            platformNote.textContent = 'Universal: Apple Silicon + Intel';
         } else if (platform.includes('win')) {
             downloadBtn.href = baseUrl + 'Sorcery.Desktop_x64.msi';
             downloadText.textContent = 'Download for Windows';
@@ -559,7 +631,7 @@
             } else {
                 downloadBtn.href = baseUrl + 'sorcery-desktop_amd64.AppImage';
                 downloadText.textContent = 'Download for Linux';
-                platformNote.textContent = 'AppImage (works on any distro)';
+                platformNote.textContent = 'AppImage (any distro)';
             }
         }
 
@@ -575,89 +647,57 @@
             });
         });
 
-        // Rotating headlines with typewriter effect
-        // Weighted by popularity - more common scenarios appear more often
-        var headlines = [
-            // Terminal (very common)
-            { action: 'Click src/api/auth.rs:142 in your terminal', result: 'VS Code opens to line 142' },
-            { action: 'Click test failures in iTerm', result: 'Neovim jumps to the failing line' },
-            { action: 'Click compiler errors in Warp', result: 'IntelliJ opens to that line' },
-
-            // Sharing - the magic of one link, many editors
-            { action: 'Alice shares srcuri.com/myapp/config.js:27', result: "Bob's Vim opens, Carol's VS Code opens" },
-            { action: 'Post a Sorcery link in a PR comment', result: 'Each reviewer opens it in their editor' },
-            { action: 'Drop a link in Slack', result: "It opens in everyone's preferred editor" },
-
-            // GitHub (very popular)
-            { action: 'Command-click a file on GitHub', result: 'Opens locally in your editor' },
-            { action: 'Command-click code in a GitHub PR', result: 'VS Code jumps to that line' },
-
-            // Observability
-            { action: 'Command-click a Datadog stack trace', result: 'IntelliJ opens to that exact line' },
-            { action: 'Command-click errors in Sentry', result: 'Your editor opens to the source' },
-            { action: 'Command-click traces in New Relic', result: 'RubyMine jumps to that line' },
-
-            // GitLab
-            { action: 'Command-click a stack trace on GitLab', result: 'Opens in Zed at that line' },
-
-            // More terminal (weight toward common use case)
-            { action: 'Click build errors in your terminal', result: 'Cursor opens to the error' }
+        // Rotating scenarios with fade animation
+        var scenarios = [
+            { action: 'Click a stack trace in Datadog', result: 'Your editor opens to that exact line' },
+            { action: 'Click a file path in your terminal', result: 'VS Code jumps to line 142' },
+            { action: 'Share a link in Slack', result: "Opens in everyone's preferred editor" },
+            { action: 'Command-click code on GitHub', result: 'Opens locally in your editor' },
+            { action: 'Click errors in Sentry', result: 'IntelliJ opens to the source' },
+            { action: 'Post a link in a PR comment', result: 'Each reviewer opens it in their editor' },
+            { action: 'Click test failures in your terminal', result: 'Neovim jumps to the failing line' },
+            { action: 'Click traces in New Relic', result: 'Your editor opens instantly' }
         ];
-        var typed = document.getElementById('typed');
-        var result = document.getElementById('result');
+
+        var actionEl = document.getElementById('action');
+        var arrowEl = document.getElementById('arrow');
+        var resultEl = document.getElementById('result');
         var currentIndex = 0;
-        var currentText = '';
-        var isDeleting = false;
-        var typeSpeed = 30;
-        var deleteSpeed = 15;
-        var pauseEnd = 3500;
-        var pauseStart = 400;
-        var resultDelay = 400;
+        var displayTime = 4000;
+        var transitionTime = 500;
 
-        function showResult() {
-            result.textContent = headlines[currentIndex].result;
-            result.classList.add('visible');
-            result.classList.remove('pulse');
-            // Trigger reflow to restart animation
-            void result.offsetWidth;
-            result.classList.add('pulse');
+        function showScenario() {
+            var scenario = scenarios[currentIndex];
+
+            // Set content
+            actionEl.textContent = scenario.action;
+            resultEl.textContent = scenario.result;
+
+            // Trigger fade in
+            requestAnimationFrame(function() {
+                actionEl.classList.add('visible');
+                arrowEl.classList.add('visible');
+                resultEl.classList.add('visible');
+            });
+
+            // Schedule fade out
+            setTimeout(hideScenario, displayTime);
         }
 
-        function hideResult() {
-            result.classList.remove('visible', 'pulse');
+        function hideScenario() {
+            actionEl.classList.remove('visible');
+            arrowEl.classList.remove('visible');
+            resultEl.classList.remove('visible');
+
+            // After fade out, show next scenario
+            setTimeout(function() {
+                currentIndex = (currentIndex + 1) % scenarios.length;
+                showScenario();
+            }, transitionTime);
         }
 
-        function tick() {
-            var target = headlines[currentIndex].action;
-
-            if (isDeleting) {
-                currentText = target.substring(0, currentText.length - 1);
-            } else {
-                currentText = target.substring(0, currentText.length + 1);
-            }
-
-            typed.textContent = currentText;
-
-            var delay = isDeleting ? deleteSpeed : typeSpeed;
-
-            if (!isDeleting && currentText === target) {
-                // Finished typing - pause, then show result
-                setTimeout(showResult, resultDelay);
-                delay = pauseEnd;
-                isDeleting = true;
-            } else if (isDeleting && currentText.length === target.length - 1) {
-                // Starting to delete - hide result
-                hideResult();
-            } else if (isDeleting && currentText === '') {
-                isDeleting = false;
-                currentIndex = (currentIndex + 1) % headlines.length;
-                delay = pauseStart;
-            }
-
-            setTimeout(tick, delay);
-        }
-
-        tick();
+        // Start the rotation
+        showScenario();
     })();
     </script>
 </body>
