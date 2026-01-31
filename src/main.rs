@@ -100,7 +100,7 @@ async fn run() -> anyhow::Result<()> {
     let host: std::net::IpAddr = std::env::var("HOST")
         .ok()
         .and_then(|h| h.parse().ok())
-        .unwrap_or_else(|| [127, 0, 0, 1].into());
+        .unwrap_or_else(|| [0, 0, 0, 0].into());
 
     let addr = SocketAddr::from((host, port));
 

@@ -18,6 +18,7 @@ proxy:
   app_port: 8080
   healthcheck:
     path: /health
+    timeout: 60
 
 registry:
   server: ghcr.io
