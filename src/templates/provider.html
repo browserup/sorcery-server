@@ -61,6 +61,10 @@
             font-weight: 500;
         }
         .header-link:hover { color: #9333ea; }
+        .install-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
         .header-btn {
             display: inline-flex;
             align-items: center;
@@ -68,7 +72,7 @@
             padding: 0.5rem 1rem;
             background: linear-gradient(135deg, #9333ea, #c026d3);
             border: none;
-            border-radius: 8px;
+            border-radius: 8px 0 0 8px;
             color: white;
             font-family: inherit;
             font-size: 0.875rem;
@@ -76,9 +80,85 @@
             text-decoration: none;
             transition: all 0.2s ease;
         }
-        .header-btn:hover {
+        .install-wrapper:hover .header-btn {
             box-shadow: 0 4px 16px rgba(147, 51, 234, 0.4);
+        }
+        .install-wrapper:hover .header-btn,
+        .install-wrapper:hover .install-toggle {
             transform: translateY(-1px);
+        }
+        .install-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.5rem;
+            background: linear-gradient(135deg, #7c28c9, #a821b8);
+            border: none;
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0 8px 8px 0;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            align-self: stretch;
+        }
+        .install-toggle:hover {
+            background: linear-gradient(135deg, #6b21a8, #9333ea);
+        }
+        .install-toggle svg {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.2s ease;
+        }
+        .install-wrapper.open .install-toggle svg {
+            transform: rotate(180deg);
+        }
+        .install-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            min-width: 220px;
+            margin-top: 0.375rem;
+            background: #1e0f32;
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 8px;
+            padding: 0.375rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            z-index: 200;
+        }
+        .install-wrapper.open .install-dropdown {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .install-option {
+            display: block;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            background: none;
+            border: none;
+            border-radius: 5px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: inherit;
+            font-size: 0.8125rem;
+            text-align: left;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .install-option:hover {
+            background: rgba(147, 51, 234, 0.2);
+            color: #fff;
+        }
+        .install-option .platform-name {
+            font-weight: 500;
+        }
+        .install-option .platform-desc {
+            font-size: 0.6875rem;
+            color: rgba(255, 255, 255, 0.5);
         }
 
         /* Main content */
@@ -136,25 +216,25 @@
             padding: 1.5rem 2rem;
         }
 
-        /* File info section */
-        .file-info {
+        /* Target info section */
+        .info-panel {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 12px;
             padding: 1rem 1.25rem;
             margin-bottom: 1.5rem;
         }
-        .file-row {
+        .info-row {
             display: flex;
             align-items: flex-start;
             gap: 1rem;
         }
-        .file-row + .file-row {
+        .info-row + .info-row {
             margin-top: 0.625rem;
             padding-top: 0.625rem;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
-        .file-label {
+        .info-label {
             flex-shrink: 0;
             width: 70px;
             font-size: 0.6875rem;
@@ -164,14 +244,14 @@
             color: rgba(255, 255, 255, 0.4);
             padding-top: 0.125rem;
         }
-        .file-value {
+        .info-value {
             flex: 1;
             font-family: 'SF Mono', 'Fira Code', monospace;
             font-size: 0.875rem;
             color: rgba(255, 255, 255, 0.9);
             word-break: break-all;
         }
-        .file-value.muted {
+        .info-value.muted {
             color: rgba(255, 255, 255, 0.5);
         }
 
@@ -309,14 +389,43 @@
             </a>
             <nav class="header-nav">
                 <a href="https://github.com/browserup/sorcery-desktop" class="header-link" target="_blank" rel="noopener">Docs</a>
-                <a href="https://github.com/browserup/sorcery-desktop/releases" class="header-btn" target="_blank" rel="noopener" title="Install Sorcery Desktop to enable &quot;open to file and line&quot; in your editor">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7,10 12,15 17,10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Install Sorcery
-                </a>
+                <div class="install-wrapper" id="install-wrapper">
+                    <a href="#" class="header-btn" id="install-btn" title="Install Sorcery Desktop to enable &quot;open to file and line&quot; in your editor">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,15 17,10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span id="install-text">Install Sorcery</span>
+                    </a>
+                    <button class="install-toggle" id="install-toggle" aria-label="Other platforms">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6,9 12,15 18,9"/>
+                        </svg>
+                    </button>
+                    <div class="install-dropdown" id="install-dropdown">
+                        <a href="#" class="install-option" data-platform="mac">
+                            <div class="platform-name">macOS</div>
+                            <div class="platform-desc">Universal: Apple Silicon + Intel</div>
+                        </a>
+                        <a href="#" class="install-option" data-platform="windows">
+                            <div class="platform-name">Windows</div>
+                            <div class="platform-desc">Windows 10+ (64-bit)</div>
+                        </a>
+                        <a href="#" class="install-option" data-platform="linux-deb">
+                            <div class="platform-name">Linux (Debian/Ubuntu)</div>
+                            <div class="platform-desc">.deb package</div>
+                        </a>
+                        <a href="#" class="install-option" data-platform="linux-rpm">
+                            <div class="platform-name">Linux (Fedora/RHEL)</div>
+                            <div class="platform-desc">.rpm package</div>
+                        </a>
+                        <a href="#" class="install-option" data-platform="linux-appimage">
+                            <div class="platform-name">Linux (AppImage)</div>
+                            <div class="platform-desc">Works on any distro</div>
+                        </a>
+                    </div>
+                </div>
             </nav>
         </div>
     </header>
@@ -346,18 +455,18 @@
                     <div class="spinner" id="spinner"></div>
                 </div>
                 <div class="content" id="content">
-                    <div class="file-info" id="file-info">
-                        <div class="file-row">
-                            <span class="file-label">File</span>
-                            <span class="file-value" id="file-path">Loading...</span>
+                    <div class="info-panel" id="info-panel">
+                        <div class="info-row">
+                            <span class="info-label">Path</span>
+                            <span class="info-value" id="path-value">Loading...</span>
                         </div>
-                        <div class="file-row">
-                            <span class="file-label">Workspace</span>
-                            <span class="file-value muted" id="workspace-name">-</span>
+                        <div class="info-row">
+                            <span class="info-label">Workspace</span>
+                            <span class="info-value muted" id="workspace-name">-</span>
                         </div>
-                        <div class="file-row hidden" id="branch-row">
-                            <span class="file-label">Branch</span>
-                            <span class="file-value muted" id="branch-name">-</span>
+                        <div class="info-row hidden" id="branch-row">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value muted" id="branch-name">-</span>
                         </div>
                     </div>
 
@@ -399,10 +508,78 @@
     (function() {
         'use strict';
 
+        // Install button platform dropdown
+        (function() {
+            var installBtn = document.getElementById('install-btn');
+            var installWrapper = document.getElementById('install-wrapper');
+            var installToggle = document.getElementById('install-toggle');
+
+            var baseUrl = 'https://github.com/browserup/sorcery-desktop/releases/latest/download/';
+            var platforms = {
+                'mac': { url: baseUrl + 'Sorcery.Desktop_universal.dmg' },
+                'windows': { url: baseUrl + 'Sorcery.Desktop_x64.msi' },
+                'linux-deb': { url: baseUrl + 'sorcery-desktop_amd64.deb' },
+                'linux-rpm': { url: baseUrl + 'sorcery-desktop_x86_64.rpm' },
+                'linux-appimage': { url: baseUrl + 'sorcery-desktop_amd64.AppImage' }
+            };
+
+            function setPlatform(key) {
+                var p = platforms[key];
+                if (p) installBtn.href = p.url;
+            }
+
+            // Set download links for dropdown options
+            document.querySelectorAll('.install-option').forEach(function(opt) {
+                var key = opt.getAttribute('data-platform');
+                if (platforms[key]) opt.href = platforms[key].url;
+            });
+
+            // Detect platform and set default
+            var userPlatform = navigator.platform.toLowerCase();
+            var ua = navigator.userAgent.toLowerCase();
+
+            if (userPlatform.includes('mac') || userPlatform.includes('darwin')) {
+                setPlatform('mac');
+            } else if (userPlatform.includes('win')) {
+                setPlatform('windows');
+            } else if (userPlatform.includes('linux')) {
+                if (ua.includes('ubuntu') || ua.includes('debian')) {
+                    setPlatform('linux-deb');
+                } else if (ua.includes('fedora') || ua.includes('rhel') || ua.includes('centos')) {
+                    setPlatform('linux-rpm');
+                } else {
+                    setPlatform('linux-appimage');
+                }
+            } else {
+                setPlatform('mac'); // Default fallback
+            }
+
+            // Dropdown toggle
+            installToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                installWrapper.classList.toggle('open');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!installWrapper.contains(e.target)) {
+                    installWrapper.classList.remove('open');
+                }
+            });
+
+            // Platform option click - close dropdown (link navigates naturally)
+            document.querySelectorAll('.install-option').forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    installWrapper.classList.remove('open');
+                });
+            });
+        })();
+
         var statusEl = document.getElementById('status');
         var subtitleEl = document.getElementById('subtitle');
         var spinnerEl = document.getElementById('spinner');
-        var filePathEl = document.getElementById('file-path');
+        var pathEl = document.getElementById('path-value');
         var workspaceEl = document.getElementById('workspace-name');
         var branchRowEl = document.getElementById('branch-row');
         var branchEl = document.getElementById('branch-name');
@@ -426,7 +603,7 @@
             spinnerEl.classList.add('hidden');
             statusEl.textContent = 'Error';
             subtitleEl.textContent = 'Could not parse the URL';
-            document.getElementById('file-info').classList.add('hidden');
+            document.getElementById('info-panel').classList.add('hidden');
             document.querySelector('.actions').classList.add('hidden');
             errorContainer.classList.remove('hidden');
             errorMessage.textContent = msg;
@@ -442,7 +619,7 @@
 
             var displayPath = target.filePath || '';
             if (target.line) displayPath += ':' + target.line;
-            filePathEl.textContent = displayPath || '-';
+            pathEl.textContent = displayPath || '.';
 
             workspaceEl.textContent = target.repoName || '-';
 
