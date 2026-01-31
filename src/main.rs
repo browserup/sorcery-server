@@ -7,7 +7,8 @@ use axum::{
     routing::get,
     Router,
 };
-use axum_extra::extract::Host;
+use axum_extra::TypedHeader;
+use headers::Host;
 use httpdate::HttpDate;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -128,10 +129,11 @@ async fn run() -> anyhow::Result<()> {
 
 async fn subdomain_aware_root(
     axum::extract::State(state): axum::extract::State<AppState>,
-    Host(host): Host,
+    TypedHeader(host): TypedHeader<Host>,
     uri: Uri,
     query: Query<routes::passthrough::PassthroughQuery>,
 ) -> Response<Body> {
+    let host = host.hostname().to_string();
     let mode = subdomain::detect_mode(&host, &uri);
     match mode {
         SubdomainMode::WwwRedirect => {
@@ -151,10 +153,11 @@ async fn subdomain_aware_root(
 
 async fn subdomain_aware_fallback(
     axum::extract::State(state): axum::extract::State<AppState>,
-    Host(host): Host,
+    TypedHeader(host): TypedHeader<Host>,
     uri: Uri,
     query: axum::extract::Query<routes::passthrough::MirrorQuery>,
 ) -> Response<Body> {
+    let host = host.hostname().to_string();
     let mode = subdomain::detect_mode(&host, &uri);
     match mode {
         SubdomainMode::WwwRedirect => {
@@ -183,9 +186,10 @@ async fn health_handler() -> &'static str {
     "OK"
 }
 
-async fn serve_app_js(Host(host): Host) -> Response<Body> {
+async fn serve_app_js(TypedHeader(host): TypedHeader<Host>) -> Response<Body> {
     let content = include_str!("static/app.js");
-    let is_localhost = subdomain::is_localhost(&host);
+    let host = host.hostname();
+    let is_localhost = subdomain::is_localhost(host);
 
     let mut response = Response::new(Body::from(content));
     *response.status_mut() = StatusCode::OK;
@@ -218,8 +222,9 @@ async fn serve_app_js(Host(host): Host) -> Response<Body> {
 
 const FAVICON_SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><polygon points="52,428 87,463 328,230 293,195" fill="#1a1a1a"/><polygon points="370,30 398,117 485,145 398,173 370,260 342,173 255,145 342,117" fill="url(#g)"/><polygon points="370,125 375,140 390,145 375,150 370,165 365,150 350,145 365,140" fill="white"/><defs><radialGradient id="g" cx="370" cy="145" r="115" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#9333ea"/><stop offset="70%" stop-color="#c026d3"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient></defs></svg>"##;
 
-async fn serve_favicon(Host(host): Host) -> Response<Body> {
-    let is_localhost = subdomain::is_localhost(&host);
+async fn serve_favicon(TypedHeader(host): TypedHeader<Host>) -> Response<Body> {
+    let host = host.hostname();
+    let is_localhost = subdomain::is_localhost(host);
 
     let mut response = Response::new(Body::from(FAVICON_SVG));
     *response.status_mut() = StatusCode::OK;
@@ -250,6 +255,6 @@ async fn serve_favicon(Host(host): Host) -> Response<Body> {
     response
 }
 
-async fn serve_favicon_svg(Host(host): Host) -> Response<Body> {
-    serve_favicon(Host(host)).await
+async fn serve_favicon_svg(host: TypedHeader<Host>) -> Response<Body> {
+    serve_favicon(host).await
 }

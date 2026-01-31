@@ -7,7 +7,8 @@ repository = "https://github.com/sorcery-app/sorcery-server"
 
 [dependencies]
 axum = { version = "0.8", features = ["macros"] }
-axum-extra = { version = "0.10", features = ["typed-header"] }
+axum-extra = { version = "0.12", features = ["typed-header"] }
+headers = "0.4"
 tokio = { version = "1", features = ["full"] }
 tower-http = { version = "0.6", features = ["cors", "fs", "trace"] }
 tower_governor = "0.8"
