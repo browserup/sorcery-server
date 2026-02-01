@@ -254,7 +254,7 @@ Here is the mapping specification for the Rust implementation, covering the majo
 The Standardized srcuri Target Format
 To make your Rust application effective, I recommend standardizing the Output to remove provider-specific artifacts (like blob, src, tree, or /-/).
 
-Target Protocol Structure: srcuri://<repo_name>/<clean_file_path>:<line>?branch=<ref>&origin=<full_remote_url>
+Target Protocol Structure: srcuri://<repo_name>/<clean_file_path>@L<line>?branch=<ref>&origin=<full_remote_url>
 
 1. GitHub
    GitHub is the most straightforward but has two variations (blob for files, tree for directories).
@@ -413,7 +413,7 @@ In Git, "origin" is just the default name for a remote, but a user might have na
 Here is the updated specification using remote instead of origin.
 
 The Standardized srcuri Target Format
-Target Protocol Structure: srcuri://<repo_name>/<clean_file_path>:<line>?branch=<ref>&remote=<full_remote_url>
+Target Protocol Structure: srcuri://<repo_name>/<clean_file_path>@L<line>?branch=<ref>&remote=<full_remote_url>
 
 1. GitHub
    Pattern: https://github.com/:owner/:repo/blob/:ref/:path#L:line

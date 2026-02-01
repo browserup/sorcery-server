@@ -146,12 +146,12 @@ The client JavaScript parses line numbers using right-to-left extraction:
 ### Protocol URL Construction
 
 ```
-srcuri://<workspace>/<path>:<line>:<column>?<query>
+srcuri://<workspace>/<path>@L<line>[C<column>]?<query>
 ```
 
 For absolute paths (triple slash):
 ```
-srcuri:///<absolute-path>:<line>:<column>
+srcuri:///<absolute-path>@L<line>[C<column>]
 ```
 
 ### Example Flow

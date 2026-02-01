@@ -118,7 +118,7 @@ Given an HTTP request to `https://srcuri.com`:
 4. Render `SrcuriTarget` into a **canonical mirror-mode URL**:
 
    ```text
-   https://srcuri.com/<repo_name>/<file_path>[:<line>]?
+   https://srcuri.com/<repo_name>/<file_path>[@L<line>]?
        branch=<ref>&remote=<remote>
    ```
 
@@ -136,14 +136,14 @@ Given an HTTP request to `https://srcuri.com`:
 Regardless of provider (GitHub, GitLab, Bitbucket, Gitea, Codeberg, Azure DevOps), translator mode produces a `SrcuriTarget` and then:
 
 ```text
-srcuri://<repo_name>/<file_path>[:<line>]?
+srcuri://<repo_name>/<file_path>[@L<line>]?
     branch=<ref>&remote=<remote>
 ```
 
 Mirrored as HTTPS:
 
 ```text
-https://srcuri.com/<repo_name>/<file_path>[:<line>]?
+https://srcuri.com/<repo_name>/<file_path>[@L<line>]?
     branch=<ref>&remote=<remote>
 ```
 
@@ -599,4 +599,3 @@ These examples cover the core translation behavior for translator mode in the se
   - Construct `SrcuriTarget`, then render the canonical mirror URL and 302 redirect.
 
 - Desktop and CLI tools should treat the generated mirror URLs as authoritative and not rely on the original `remote` file URL once translated.
-
