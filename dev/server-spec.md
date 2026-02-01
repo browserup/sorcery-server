@@ -133,7 +133,7 @@ the server accepts both formats and normalizes internally:
 The client JavaScript parses line numbers using right-to-left extraction:
 
 ```javascript
-// Colon format: path:line:column
+// Line suffix format: path@LlineCcol (legacy :line:column accepted)
 "src/lib.rs:42:10" → { path: "src/lib.rs", line: 42, column: 10 }
 
 // GitHub format: path#L<n>
@@ -157,9 +157,9 @@ srcuri:///<absolute-path>:<line>:<column>
 ### Example Flow
 
 ```
-User clicks:    https://srcuri.com/myrepo/src/lib.rs:42?branch=main
+User clicks:    https://srcuri.com/myrepo/src/lib.rs@L42?branch=main
 Server returns: HTML with JavaScript
-JS constructs:  srcuri://myrepo/src/lib.rs:42?branch=main
+JS constructs:  srcuri://myrepo/src/lib.rs@L42?branch=main
 Browser opens:  Protocol handler (Sorcery Desktop)
 Desktop:        Opens file in configured editor at line 42
 ```
@@ -211,10 +211,10 @@ Browsers never send `#fragment` data to servers, so path-based provider requests
 
 1. Reads `window.location.pathname` and `window.location.hash`
 2. Detects the provider + parses the remote URL client-side (including line numbers encoded as fragments)
-3. Builds the canonical `srcuri://` URL (`srcuri://repo/file.rs:line?...`)
+3. Builds the canonical `srcuri://` URL (`srcuri://repo/file.rs@Lline?...`)
 4. Attempts to open the protocol handler, showing fallback/install instructions if Sorcery Desktop is absent
 
-This design keeps user-facing URLs clean (no `:line` suffixes) and still allows Slack/Teams unfurls to display the original provider URL.
+This design keeps user-facing URLs clean (no client-only fragments) and still allows Slack/Teams unfurls to display the original provider URL.
 
 ### Behavior (Query-Based)
 
@@ -222,7 +222,7 @@ When `/?remote=` is present, the fragment is already URL-encoded, so the server 
 
 1. Extract the `remote` query parameter
 2. Parse host/repo/ref/file/line using the shared Target logic
-3. Emit a 302 redirect to the equivalent workspace mirror URL (`/repo/path:line?...`)
+3. Emit a 302 redirect to the equivalent workspace mirror URL (`/repo/path@Lline?...`)
 4. The mirror page then issues the JS redirect to `srcuri://...`
 
 This route is the documented escape hatch from the unified protocol packet and should remain functional for automation-heavy flows.
@@ -441,7 +441,7 @@ Returns `200 OK` with body `OK` for load balancer health checks.
 - [ ] Workspace mirror: `/open` endpoint with client-side redirect
 - [ ] Workspace mirror: Path-based URLs (`/<workspace>/<path>...`)
 - [ ] Provider passthrough: Query-based (`/?remote=<url>`)
-- [ ] Provider passthrough: Path-based (`/<provider-url>[:line]`)
+- [ ] Provider passthrough: Path-based (`/<provider-url>[@Lline]`, legacy `:line` accepted)
 - [ ] Path-based line suffix: Extract `:N` from end of path
 - [ ] Provider detection: Pattern-based (supports self-hosted)
 - [ ] Provider parsing: GitHub, GitLab, Bitbucket, Gitea, Codeberg, Azure DevOps
@@ -527,7 +527,7 @@ This creates an architectural requirement for **two URL parsing implementations*
 |------|---------------|-----------------|--------|
 | Path-based passthrough | `srcuri.com/github.com/.../file.rs#L42` | JavaScript (browser) | Server cannot see `#L42` |
 | Query-based passthrough | `srcuri.com/?remote=...%23L42` | Rust (srcuri-core) | `#` is URL-encoded as `%23`, server sees it |
-| Mirror mode | `srcuri.com/repo/file.rs:42?branch=main` | Neither | Line is in path (`:42`), not fragment |
+| Mirror mode | `srcuri.com/repo/file.rs@L42?branch=main` | Neither | Line is in path (`@L42`), not fragment |
 
 The JavaScript in `provider.html` (~450 lines) reads `window.location.hash` to extract
 line numbers from fragments, then constructs the `srcuri://` protocol URL client-side.

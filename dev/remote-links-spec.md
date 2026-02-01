@@ -18,13 +18,13 @@ Srcuri has two logical URL “modes” on `https://srcuri.com`:
    - Custom protocol example:
 
      ```text
-     srcuri://browserup/web/app/models/metric_set.rb:42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup
+     srcuri://browserup/web/app/models/metric_set.rb@L42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup
      ```
 
    - Web mirror:
 
      ```text
-     https://srcuri.com/browserup/web/app/models/metric_set.rb:42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup
+     https://srcuri.com/browserup/web/app/models/metric_set.rb@L42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup
      ```
 
    Semantics: “This **is** a srcuri link, just over HTTPS.”
@@ -41,7 +41,7 @@ Srcuri has two logical URL “modes” on `https://srcuri.com`:
    The server parses that and redirects to:
 
    ```text
-   https://srcuri.com/browserup/web/app/models/metric_set.rb:42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup
+   https://srcuri.com/browserup/web/app/models/metric_set.rb@L42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup
    ```
 
    From there, the **desktop app** will handle `srcuri://…` semantics (branch vs tag vs SHA, worktrees, etc.).
@@ -259,7 +259,7 @@ line      = 42
 Redirect URL (mirror-mode target):
 
 ```text
-https://srcuri.com/browserup/web/app/models/metric_set.rb:42?
+https://srcuri.com/browserup/web/app/models/metric_set.rb@L42?
     branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&
     remote=github.com/browserup/browserup
 ```
@@ -310,7 +310,7 @@ Parsed:
 Redirect URL:
 
 ```text
-https://srcuri.com/gitlab/lib/gitlab/ci/templates/OpenShift.gitlab-ci.yml:12?
+https://srcuri.com/gitlab/lib/gitlab/ci/templates/OpenShift.gitlab-ci.yml@L12?
     branch=master&
     remote=gitlab.com/gitlab-org/gitlab
 ```
@@ -358,7 +358,7 @@ Parsed:
 Redirect URL:
 
 ```text
-https://srcuri.com/markdowndemo/README.md:5?
+https://srcuri.com/markdowndemo/README.md@L5?
     branch=master&
     remote=bitbucket.org/tutorials/markdowndemo
 ```
@@ -409,7 +409,7 @@ Parsed:
 Redirect URL:
 
 ```text
-https://srcuri.com/tea/cmd/login.go:24?
+https://srcuri.com/tea/cmd/login.go@L24?
     branch=main&
     remote=gitea.com/gitea/tea
 ```
@@ -437,7 +437,7 @@ https://srcuri.com/?remote=https://codeberg.org/user/repo/src/branch/main/path/t
 Redirect URL:
 
 ```text
-https://srcuri.com/repo/path/to/file.go:10?
+https://srcuri.com/repo/path/to/file.go@L10?
     branch=main&
     remote=codeberg.org/user/repo
 ```
@@ -507,7 +507,7 @@ Parsed:
 Redirect URL:
 
 ```text
-https://srcuri.com/fabric/src/index.ts:12?
+https://srcuri.com/fabric/src/index.ts@L12?
     branch=main&
     remote=dev.azure.com/fabric/fabric-editor/_git/fabric
 ```
@@ -578,13 +578,13 @@ Below is a compact table of example translator inputs and their resolved canonic
 
 | Provider   | Translator Input (`remote=`)                                                                                                                  | Resolved Mirror URL                                                                                                                                                |
 |-----------|-----------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| GitHub    | `https://github.com/ericbeland/ruby-packer/blob/ffi-update/Gemfile#L10`                                                                      | `https://srcuri.com/ruby-packer/Gemfile:10?branch=ffi-update&remote=github.com/ericbeland/ruby-packer`                                                            |
-| GitHub    | `https://github.com/browserup/browserup/blob/f41ccd0b6a4ec5d964ac26377c66e34973e3581a/web/app/models/metric_set.rb#L42`                       | `https://srcuri.com/browserup/web/app/models/metric_set.rb:42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup`              |
-| GitLab    | `https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/OpenShift.gitlab-ci.yml#L12`                                     | `https://srcuri.com/gitlab/lib/gitlab/ci/templates/OpenShift.gitlab-ci.yml:12?branch=master&remote=gitlab.com/gitlab-org/gitlab`                                  |
-| Bitbucket | `https://bitbucket.org/tutorials/markdowndemo/src/master/README.md#lines-5`                                                                  | `https://srcuri.com/markdowndemo/README.md:5?branch=master&remote=bitbucket.org/tutorials/markdowndemo`                                                            |
-| Gitea     | `https://gitea.com/gitea/tea/src/branch/main/cmd/login.go#L24`                                                                                | `https://srcuri.com/tea/cmd/login.go:24?branch=main&remote=gitea.com/gitea/tea`                                                                                    |
-| Codeberg  | `https://codeberg.org/user/repo/src/branch/main/path/to/file.go#L10`                                                                         | `https://srcuri.com/repo/path/to/file.go:10?branch=main&remote=codeberg.org/user/repo`                                                                             |
-| Azure     | `https://dev.azure.com/fabric/fabric-editor/_git/fabric?path=/src/index.ts&version=GBmain&line=12`                                           | `https://srcuri.com/fabric/src/index.ts:12?branch=main&remote=dev.azure.com/fabric/fabric-editor/_git/fabric`                                                     |
+| GitHub    | `https://github.com/ericbeland/ruby-packer/blob/ffi-update/Gemfile#L10`                                                                      | `https://srcuri.com/ruby-packer/Gemfile@L10?branch=ffi-update&remote=github.com/ericbeland/ruby-packer`                                                            |
+| GitHub    | `https://github.com/browserup/browserup/blob/f41ccd0b6a4ec5d964ac26377c66e34973e3581a/web/app/models/metric_set.rb#L42`                       | `https://srcuri.com/browserup/web/app/models/metric_set.rb@L42?branch=f41ccd0b6a4ec5d964ac26377c66e34973e3581a&remote=github.com/browserup/browserup`              |
+| GitLab    | `https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/OpenShift.gitlab-ci.yml#L12`                                     | `https://srcuri.com/gitlab/lib/gitlab/ci/templates/OpenShift.gitlab-ci.yml@L12?branch=master&remote=gitlab.com/gitlab-org/gitlab`                                  |
+| Bitbucket | `https://bitbucket.org/tutorials/markdowndemo/src/master/README.md#lines-5`                                                                  | `https://srcuri.com/markdowndemo/README.md@L5?branch=master&remote=bitbucket.org/tutorials/markdowndemo`                                                            |
+| Gitea     | `https://gitea.com/gitea/tea/src/branch/main/cmd/login.go#L24`                                                                                | `https://srcuri.com/tea/cmd/login.go@L24?branch=main&remote=gitea.com/gitea/tea`                                                                                    |
+| Codeberg  | `https://codeberg.org/user/repo/src/branch/main/path/to/file.go#L10`                                                                         | `https://srcuri.com/repo/path/to/file.go@L10?branch=main&remote=codeberg.org/user/repo`                                                                             |
+| Azure     | `https://dev.azure.com/fabric/fabric-editor/_git/fabric?path=/src/index.ts&version=GBmain&line=12`                                           | `https://srcuri.com/fabric/src/index.ts@L12?branch=main&remote=dev.azure.com/fabric/fabric-editor/_git/fabric`                                                     |
 
 These examples cover the core translation behavior for translator mode in the server.
 

@@ -37,11 +37,11 @@ The path-based translator:
 **Replace `srcuri://` with `https://srcuri.com/`**:
 
 ```
-Before: srcuri://myrepo/src/lib.rs:42?branch=main
-After:  https://srcuri.com/myrepo/src/lib.rs:42?branch=main
+Before: srcuri://myrepo/src/lib.rs@L42?branch=main
+After:  https://srcuri.com/myrepo/src/lib.rs@L42?branch=main
 
-Before: srcuri://any/src/main.rs:42
-After:  https://srcuri.com/any/src/main.rs:42
+Before: srcuri://any/src/main.rs@L42
+After:  https://srcuri.com/any/src/main.rs@L42
 ```
 
 ## URL Formats
@@ -79,10 +79,10 @@ For sharing direct srcuri links:
 
 ```bash
 # Workspace-relative paths
-https://srcuri.com/myrepo/src/lib.rs:42?branch=main&remote=https://github.com/owner/myrepo
+https://srcuri.com/myrepo/src/lib.rs@L42?branch=main&remote=https://github.com/owner/myrepo
 
 # With remote for cloning
-https://srcuri.com/myrepo/src/lib.rs:42?branch=main&remote=https://github.com/owner/myrepo
+https://srcuri.com/myrepo/src/lib.rs@L42?branch=main&remote=https://github.com/owner/myrepo
 ```
 
 ### Enterprise Subdomains
@@ -90,7 +90,7 @@ https://srcuri.com/myrepo/src/lib.rs:42?branch=main&remote=https://github.com/ow
 Enterprise tenants get their own subdomain:
 
 ```
-https://acme.srcuri.com/internal-tools/src/auth.rs:42
+https://acme.srcuri.com/internal-tools/src/auth.rs@L42
 ```
 
 ## Features
@@ -123,7 +123,7 @@ Use the `?_subdomain=` query parameter to simulate subdomains:
 
 ```bash
 # Test enterprise tenant
-curl "http://localhost:3000/myrepo/file.rs:42?_subdomain=acme"
+curl "http://localhost:3000/myrepo/file.rs@L42?_subdomain=acme"
 
 # Test www redirect
 curl "http://localhost:3000/?_subdomain=www"
@@ -201,7 +201,7 @@ Browser JS reads: window.location (including #L42 fragment)
     ↓
 JS parses: GitHub URL → extracts repo, branch, file, line
     ↓
-JS builds: srcuri://repo/file.rs:42?branch=main&remote=https://github.com/owner/repo
+JS builds: srcuri://repo/file.rs@L42?branch=main&remote=https://github.com/owner/repo
     ↓
 JS redirects: window.location.href = srcuri://...
     ↓
@@ -213,11 +213,11 @@ Editor opens: file.rs at line 42
 ### srcuri.com Flow (Direct Protocol)
 
 ```
-User shares: https://srcuri.com/repo/src/lib.rs:42?branch=main
+User shares: https://srcuri.com/repo/src/lib.rs@L42?branch=main
     ↓
 Server returns: HTML with OpenGraph tags + JavaScript
     ↓
-JS redirects: srcuri://repo/src/lib.rs:42?branch=main
+JS redirects: srcuri://repo/src/lib.rs@L42?branch=main
     ↓
 OS launches: Sorcery Desktop
 ```

@@ -514,7 +514,7 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
     };
 
     if let Some(line) = target.line {
-        let _ = write!(srcuri, ":{}", line);
+        let _ = write!(srcuri, "@L{}", line);
     }
 
     let mut query_parts = Vec::new();
@@ -534,7 +534,7 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
 
     // Build display info
     let display_path = target.file_path.as_deref().unwrap_or("");
-    let display_line = target.line.map(|l| format!(":{}", l)).unwrap_or_default();
+    let display_line = target.line.map(|l| format!("@L{}", l)).unwrap_or_default();
     let display_branch = target.ref_value.as_deref().unwrap_or("main");
 
     // Generate OG description

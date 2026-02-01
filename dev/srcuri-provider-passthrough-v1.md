@@ -61,11 +61,11 @@ This fits into the complete authority system:
 
 | Authority | Mode | Example |
 |-----------|------|---------|
-| `<workspace>` | Implicit workspace | `srcuri://myrepo/src/lib.rs:42` |
-| `wks` | Explicit workspace | `srcuri://wks/myrepo/src/lib.rs:42` |
-| `rel` | Relative/search | `srcuri://rel/README.md:1` |
-| `any` | Best-effort | `srcuri://any/src/lib.rs:42` |
-| `abs` | Absolute path | `srcuri://abs/etc/hosts:1` |
+| `<workspace>` | Implicit workspace | `srcuri://myrepo/src/lib.rs@L42` |
+| `wks` | Explicit workspace | `srcuri://wks/myrepo/src/lib.rs@L42` |
+| `rel` | Relative/search | `srcuri://rel/README.md@L1` |
+| `any` | Best-effort | `srcuri://any/src/lib.rs@L42` |
+| `abs` | Absolute path | `srcuri://abs/etc/hosts@L1` |
 | `ext` | External URL | `srcuri://ext/https/github.com/owner/repo/blob/main/file.rs#L42` |
 
 ### URL Structure
@@ -140,11 +140,11 @@ srcuri://ext/https/github.com/owner/repo/blob/main/file.rs#L42
          ^^^
          Authority = "ext" → External URL mode
 
-srcuri://myworkspace/src/lib.rs:42
+srcuri://myworkspace/src/lib.rs@L42
          ^^^^^^^^^^^
          Not a reserved token → Implicit workspace
 
-srcuri://rel/README.md:1
+srcuri://rel/README.md@L1
          ^^^
          Authority = "rel" → Relative/search mode
 ```
@@ -167,7 +167,7 @@ External mode preserves the **fragment** (`#L42`) rather than using the colon-ba
 | Gitea | `#L{line}` or `#L{start}-L{end}` | `#L42`, `#L10-L20` |
 | Azure DevOps | `&line={line}` (query param) | `?path=/file&line=42` |
 
-When opening locally, these fragments are normalized to the standard `:line:column` format.
+When opening locally, these fragments are normalized to the standard `@LlineCcol` format.
 
 ---
 
@@ -382,7 +382,7 @@ srcuri.com/ext/https/github.com/owner/repo/blob/main/file.rs#L42
               │                       │
               │  [View on GitHub]─────┼──► https://github.com/owner/repo/...#L42
               │                       │
-              │  [Clone & Open]───────┼──► srcuri://repo/file.rs:42?remote=github.com/owner/repo
+              │  [Clone & Open]───────┼──► srcuri://repo/file.rs@L42?remote=github.com/owner/repo
               └───────────────────────┘
 ```
 
@@ -426,7 +426,7 @@ External URL:
 srcuri://ext/https/github.com/owner/repo/blob/main/src/lib.rs#L42
 
 Spawned standard link (after clone):
-srcuri://repo/src/lib.rs:42?branch=main
+srcuri://repo/src/lib.rs@L42?branch=main
 ```
 
 ---

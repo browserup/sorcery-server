@@ -618,7 +618,7 @@
             subtitleEl.textContent = 'Opening in your editor...';
 
             var displayPath = target.filePath || '';
-            if (target.line) displayPath += ':' + target.line;
+            if (target.line) displayPath += '@L' + target.line;
             pathEl.textContent = displayPath || '.';
 
             workspaceEl.textContent = target.repoName || '-';
@@ -710,6 +710,62 @@
             var numStr = rest.includes(':') ? rest.split(':')[0] : rest.split('-')[0];
             var num = parseInt(numStr, 10);
             return isNaN(num) ? null : num;
+        }
+
+        function parseAtLineSuffix(path) {
+            var lower = path.toLowerCase();
+            var markerIndex = path.lastIndexOf('@');
+            var markerLen = 1;
+            var encodedIndex = lower.lastIndexOf('%40');
+            if (encodedIndex > markerIndex) {
+                markerIndex = encodedIndex;
+                markerLen = 3;
+            }
+            if (markerIndex === -1) return null;
+            if (markerIndex < path.lastIndexOf('/')) return null;
+
+            var suffix = path.substring(markerIndex + markerLen);
+            if (!suffix || suffix[0].toLowerCase() !== 'l') return null;
+
+            var rest = suffix.substring(1);
+            if (!rest) {
+                return { path: path.substring(0, markerIndex), line: null, column: null };
+            }
+
+            var i = 0;
+            while (i < rest.length && rest[i] >= '0' && rest[i] <= '9') {
+                i += 1;
+            }
+
+            if (i > 0) {
+                var line = parseInt(rest.substring(0, i), 10);
+                var rem = rest.substring(i);
+                if (!rem) {
+                    return { path: path.substring(0, markerIndex), line: line, column: null };
+                }
+                var marker = rem[0];
+                if (marker === 'c' || marker === 'C' || marker === ':') {
+                    var colTail = rem.substring(1);
+                    if (!colTail) {
+                        return { path: path.substring(0, markerIndex), line: line, column: null };
+                    }
+                    if (/^\d+$/.test(colTail)) {
+                        var column = parseInt(colTail, 10);
+                        return { path: path.substring(0, markerIndex), line: line, column: column <= 120 ? column : null };
+                    }
+                }
+                return null;
+            }
+
+            var marker = rest[0];
+            if (marker === 'c' || marker === 'C') {
+                var colTail = rest.substring(1);
+                if (!colTail || /^\d+$/.test(colTail)) {
+                    return { path: path.substring(0, markerIndex), line: null, column: null };
+                }
+            }
+
+            return null;
         }
 
         function parseGitHub(url) {
@@ -847,7 +903,7 @@
         function buildSrcuriUrl(target) {
             var url = 'srcuri://' + target.repoName;
             if (target.filePath) { url += '/' + target.filePath; }
-            if (target.line) { url += ':' + target.line; }
+            if (target.line) { url += '@L' + target.line; }
             var queryParts = [];
             if (target.refValue) { queryParts.push('branch=' + encodeURIComponent(target.refValue)); }
             if (target.remote) { queryParts.push('remote=https://' + target.remote); }
@@ -915,13 +971,26 @@
                     debug('after normalize http:/', path);
                 }
 
-                // Handle :N line number suffix (convert to #LN fragment if no hash present)
-                var lineMatch = path.match(/:(\d+)$/);
-                if (lineMatch && !hash) {
-                    path = path.substring(0, path.length - lineMatch[0].length);
-                    hash = '#L' + lineMatch[1];
-                    debug('converted :N to #LN', { path: path, hash: hash });
+            // Handle @L line number suffix (convert to #LN fragment if no hash present)
+            var atParsed = parseAtLineSuffix(path);
+            if (atParsed && !hash) {
+                path = atParsed.path;
+                if (atParsed.line !== null && atParsed.line !== undefined) {
+                    hash = '#L' + atParsed.line;
+                    if (atParsed.column !== null && atParsed.column !== undefined) {
+                        hash += 'C' + atParsed.column;
+                    }
                 }
+                debug('converted @L to #LN', { path: path, hash: hash });
+            }
+
+            // Handle :N line number suffix (convert to #LN fragment if no hash present)
+            var lineMatch = path.match(/:(\d+)$/);
+            if (lineMatch && !hash) {
+                path = path.substring(0, path.length - lineMatch[0].length);
+                hash = '#L' + lineMatch[1];
+                debug('converted :N to #LN', { path: path, hash: hash });
+            }
 
                 var remoteUrl = path + hash;
                 debug('remoteUrl', remoteUrl);

@@ -236,12 +236,12 @@ Let's generate a list out, for github, gitlat, gitea, bitbucket, and any others 
 
 https://github.com/ericbeland/ruby-packer/blob/master/.ruby-version#L1
 converts to
-srcuri://ruby-packer/blob/master/.ruby-version:1?branch=master
+srcuri://ruby-packer/blob/master/.ruby-version@L1?branch=master
 
 For each of these URLs, we should translate the URL to our custom protocol equivalent.
 
 For example:
-srcuri://ruby-packer/blob/master/.ruby-version:1?branch=master
+srcuri://ruby-packer/blob/master/.ruby-version@L1?branch=master
 and
 https://github.com/ericbeland/ruby-packer/blob/ffi-update/Gemfile
 
@@ -269,7 +269,7 @@ Repo Name	ruby-packer	Used as the URI host/workspace hint.
 Ref	ffi-update	The branch or SHA.
 Clean Path	Gemfile	Crucial: Must strip /blob/:ref/ from the raw path.
 Line	10	Remove L prefix.
-Translated Output: srcuri://ruby-packer/Gemfile:10?branch=ffi-update&origin=github.com/ericbeland/ruby-packer
+Translated Output: srcuri://ruby-packer/Gemfile@L10?branch=ffi-update&origin=github.com/ericbeland/ruby-packer
 
 2. GitLab
    GitLab uses a separator /-/ which makes parsing reliable, but older versions might skip it. They also use blob for files.
@@ -284,7 +284,7 @@ Repo Name	gitlab	The last segment of the project path.
 Ref	master	Found after blob/.
 Clean Path	app/models/user.rb	Strip /-/blob/master/.
 Line	50	Remove L prefix.
-Translated Output: srcuri://gitlab/app/models/user.rb:50?branch=master&origin=gitlab.com/gitlab-org/gitlab
+Translated Output: srcuri://gitlab/app/models/user.rb@L50?branch=master&origin=gitlab.com/gitlab-org/gitlab
 
 3. Bitbucket (Cloud)
    Bitbucket uses src instead of blob and a verbose hash format for lines.
@@ -299,7 +299,7 @@ Repo Name	aui
 Ref	master	Found after /src/.
 Clean Path	src/less/aui-page-layout.less	Strip /src/master/.
 Line	5	Parse from lines-5. Sometimes lines-5:10 (take first).
-Translated Output: srcuri://aui/src/less/aui-page-layout.less:5?branch=master&origin=bitbucket.org/atlassian/aui
+Translated Output: srcuri://aui/src/less/aui-page-layout.less@L5?branch=master&origin=bitbucket.org/atlassian/aui
 
 4. Gitea / Forgejo
    Gitea is similar to GitHub but usually uses src and explicit branch or commit segments in the URL.
@@ -314,7 +314,7 @@ Repo Name	tea
 Ref	main	Found after src/branch/ (or src/commit/).
 Clean Path	cmd/login.go	Strip src/branch/main/.
 Line	24	Remove L prefix.
-Translated Output: srcuri://tea/cmd/login.go:24?branch=main&origin=gitea.com/gitea/tea
+Translated Output: srcuri://tea/cmd/login.go@L24?branch=main&origin=gitea.com/gitea/tea
 
 5. Azure DevOps (Bonus)
    Enterprise users will ask for this. It is query-param based, which actually makes it easier to parse.
@@ -329,7 +329,7 @@ Repo Name	fabric
 Ref	main	Strip GB (Git Branch) prefix from version.
 Clean Path	src/index.ts	Explicitly in path param.
 Line	12	Explicitly in line param.
-Translated Output: srcuri://fabric/src/index.ts:12?branch=main&origin=...
+Translated Output: srcuri://fabric/src/index.ts@L12?branch=main&origin=...
 
 rust Specification
 Here is how you can structure this in your Rust project (src/url_parser.rs). This structure prepares you to handle the complexity of regex matching across different providers.
@@ -347,7 +347,7 @@ pub line: Option<u32>,  // 42
 }
 
 impl SrcuriTarget {
-// The output format: srcuri://repo/path:line?branch=x&origin=y
+// The output format: srcuri://repo/path@Lline?branch=x&origin=y
 pub fn to_protocol_string(&self) -> String {
 let line_part = match self.line {
 Some(n) => format!(":{}", n),
@@ -420,35 +420,35 @@ Target Protocol Structure: srcuri://<repo_name>/<clean_file_path>:<line>?branch=
 
 Input: https://github.com/ericbeland/ruby-packer/blob/ffi-update/Gemfile#L10
 
-Translated Output: srcuri://ruby-packer/Gemfile:10?branch=ffi-update&remote=github.com/ericbeland/ruby-packer
+Translated Output: srcuri://ruby-packer/Gemfile@L10?branch=ffi-update&remote=github.com/ericbeland/ruby-packer
 
 2. GitLab
    Pattern: https://gitlab.com/:owner/:repo/-/blob/:ref/:path#L:line
 
 Input: https://gitlab.com/gitlab-org/gitlab/-/blob/master/app/models/user.rb#L50
 
-Translated Output: srcuri://gitlab/app/models/user.rb:50?branch=master&remote=gitlab.com/gitlab-org/gitlab
+Translated Output: srcuri://gitlab/app/models/user.rb@L50?branch=master&remote=gitlab.com/gitlab-org/gitlab
 
 3. Bitbucket (Cloud)
    Pattern: https://bitbucket.org/:owner/:repo/src/:ref/:path#lines-:line
 
 Input: https://bitbucket.org/atlassian/aui/src/master/src/less/aui-page-layout.less#lines-5
 
-Translated Output: srcuri://aui/src/less/aui-page-layout.less:5?branch=master&remote=bitbucket.org/atlassian/aui
+Translated Output: srcuri://aui/src/less/aui-page-layout.less@L5?branch=master&remote=bitbucket.org/atlassian/aui
 
 4. Gitea / Forgejo
    Pattern: https://gitea.com/:owner/:repo/src/branch/:ref/:path#L:line
 
 Input: https://gitea.com/gitea/tea/src/branch/main/cmd/login.go#L24
 
-Translated Output: srcuri://tea/cmd/login.go:24?branch=main&remote=gitea.com/gitea/tea
+Translated Output: srcuri://tea/cmd/login.go@L24?branch=main&remote=gitea.com/gitea/tea
 
 5. Azure DevOps
    Pattern: https://dev.azure.com/:org/:project/_git/:repo?path=/:path&version=GB:ref&line=:line
 
 Input: https://dev.azure.com/fabric/fabric-editor/_git/fabric?path=/src/index.ts&version=GBmain&line=12
 
-Translated Output: srcuri://fabric/src/index.ts:12?branch=main&remote=dev.azure.com/fabric/fabric-editor/_git/fabric
+Translated Output: srcuri://fabric/src/index.ts@L12?branch=main&remote=dev.azure.com/fabric/fabric-editor/_git/fabric
 
 Updated Rust Specification
 Here is the updated Rust struct for src/url_parser.rs using the remote field.
@@ -466,7 +466,7 @@ pub line: Option<u32>,  // 42
 }
 
 impl SrcuriTarget {
-// The output format: srcuri://repo/path:line?branch=x&remote=y
+// The output format: srcuri://repo/path@Lline?branch=x&remote=y
 pub fn to_protocol_string(&self) -> String {
 let line_part = match self.line {
 Some(n) => format!(":{}", n),
@@ -1036,7 +1036,7 @@ Group 4 (Path - Rest): update/Gemfile
 
 Anchor: L10 -> 10
 
-Constructed Link: srcuri://ruby-packer/update/Gemfile:10?branch=feature&remote=github.com/ericbeland/ruby-packer
+Constructed Link: srcuri://ruby-packer/update/Gemfile@L10?branch=feature&remote=github.com/ericbeland/ruby-packer
 
 2. GitLab
    URL: https://gitlab.com/gitlab-org/gitlab/-/blob/release/15-0/app/models/user.rb#L50
@@ -1053,7 +1053,7 @@ Group 4 (Path - Rest): 15-0/app/models/user.rb
 
 Anchor: L50 -> 50
 
-Constructed Link: srcuri://gitlab/15-0/app/models/user.rb:50?branch=release&remote=gitlab.com/gitlab-org/gitlab
+Constructed Link: srcuri://gitlab/15-0/app/models/user.rb@L50?branch=release&remote=gitlab.com/gitlab-org/gitlab
 
 3. Bitbucket (Cloud)
    URL: https://bitbucket.org/atlassian/aui/src/bugfix/header-fix/src/less/main.less#lines-5
@@ -1070,7 +1070,7 @@ Group 4 (Path - Rest): header-fix/src/less/main.less
 
 Anchor: lines-5 -> 5
 
-Constructed Link: srcuri://aui/header-fix/src/less/main.less:5?branch=bugfix&remote=bitbucket.org/atlassian/aui
+Constructed Link: srcuri://aui/header-fix/src/less/main.less@L5?branch=bugfix&remote=bitbucket.org/atlassian/aui
 
 4. Gitea / Forgejo (The Exception)
    Because Gitea URLs are explicit (/src/branch/...), the server can actually do a Perfect Split.
@@ -1085,7 +1085,7 @@ Unlike the others, Gitea does not combine them. However, URLs often do allow sla
 
 Safe Bet: Treat it like GitHub (Naive Split) to keep the protocol consistent. Let the desktop do the work.
 
-Constructed Link: srcuri://tea/login/cmd/main.go:24?branch=feature&remote=gitea.com/gitea/tea
+Constructed Link: srcuri://tea/login/cmd/main.go@L24?branch=feature&remote=gitea.com/gitea/tea
 
 The "Universal Translator" Implementation (TypeScript Example)
 If your server is Node/TS (common for web redirectors), here is the logic. This produces the srcuri:// string ready for redirection.
@@ -1152,7 +1152,7 @@ line: parseLine(hash, 'lines-')
 if (!info) return null;
 
 // Construct the Protocol Link
-// srcuri://repo/path:line?branch=b&remote=r
+// srcuri://repo/path@Lline?branch=b&remote=r
 let dest = `srcuri://${info.repo}/${info.naivePath}`;
 if (info.line) dest += `:${info.line}`;
 

@@ -594,7 +594,7 @@
                 </div>
             </div>
             <div class="code-example">
-                <code>https://srcuri.com/repo/file.rs:42?branch=main&amp;remote=https://github.com/user/repo</code>
+                <code>https://srcuri.com/repo/file.rs@L42?branch=main&amp;remote=https://github.com/user/repo</code>
                 <div class="arrow">&darr;</div>
                 <div class="result-text">Opens file.rs at line 42 in your editor</div>
             </div>
@@ -626,7 +626,7 @@
             <div class="advanced-content">
                 <h3>Manual URL Construction</h3>
                 <p>You can construct srcuri.com links manually using this format:</p>
-                <code>https://srcuri.com/{repo}/{path}:{line}?branch={branch}&amp;remote={remote_url}</code>
+                <code>https://srcuri.com/{repo}/{path}@L{line}?branch={branch}&amp;remote={remote_url}</code>
                 <dl class="param-list">
                     <dt>repo</dt>
                     <dd>Repository name (e.g., "sorcery-desktop")</dd>
@@ -922,7 +922,7 @@
         function buildSrcuriUrl(target) {
             var url = 'https://srcuri.com/' + target.repoName + '/';
             if (target.filePath) { url += target.filePath; }
-            if (target.line) { url += ':' + target.line; }
+            if (target.line) { url += '@L' + target.line; }
             var queryParts = [];
             if (target.refValue) { queryParts.push('branch=' + encodeURIComponent(target.refValue)); }
             if (target.remote) { queryParts.push('remote=' + encodeURIComponent('https://' + target.remote)); }
@@ -966,7 +966,7 @@
             var srcuriUrl = buildSrcuriUrl(target);
             var displayInfo = target.repoName;
             if (target.filePath) { displayInfo += '/' + target.filePath; }
-            if (target.line) { displayInfo += ':' + target.line; }
+            if (target.line) { displayInfo += '@L' + target.line; }
             showResult(result.originalUrl, srcuriUrl, displayInfo);
         });
 

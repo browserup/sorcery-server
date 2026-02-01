@@ -83,7 +83,7 @@ async fn test_passthrough_github_redirect() {
         .unwrap()
         .to_str()
         .unwrap();
-    assert!(location.contains("/repo/src/lib.rs:42"));
+    assert!(location.contains("/repo/src/lib.rs@L42"));
     assert!(location.contains("branch=main"));
     assert!(location.contains("remote=https://github.com/owner/repo"));
 }
@@ -109,7 +109,7 @@ async fn test_passthrough_gitlab_redirect() {
         .unwrap()
         .to_str()
         .unwrap();
-    assert!(location.contains("/project/lib/file.rb:12"));
+    assert!(location.contains("/project/lib/file.rb@L12"));
     assert!(location.contains("remote=https://gitlab.com/group/project"));
 }
 
@@ -177,7 +177,7 @@ async fn test_passthrough_without_https_prefix() {
         .unwrap()
         .to_str()
         .unwrap();
-    assert!(location.contains("/repo/file.rs:10"));
+    assert!(location.contains("/repo/file.rs@L10"));
     // Output should always have https:// prefix regardless of input format
     assert!(location.contains("remote=https://github.com/owner/repo"));
 }
@@ -295,7 +295,7 @@ async fn test_branch_with_special_chars_is_url_encoded() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/src/file.rs:42?branch=feature/c%2B%2B")
+                .uri("/myrepo/src/file.rs@L42?branch=feature/c%2B%2B")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -326,7 +326,7 @@ async fn test_invalid_branch_shell_metachar_rejected() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/file.rs:10?branch=main;rm%20-rf")
+                .uri("/myrepo/file.rs@L10?branch=main;rm%20-rf")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -347,7 +347,7 @@ async fn test_invalid_branch_path_traversal_rejected() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/file.rs:10?branch=../../../etc/passwd")
+                .uri("/myrepo/file.rs@L10?branch=../../../etc/passwd")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -367,7 +367,7 @@ async fn test_invalid_remote_shell_metachar_rejected() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/file.rs:10?remote=github.com/owner/repo;whoami")
+                .uri("/myrepo/file.rs@L10?remote=github.com/owner/repo;whoami")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -387,7 +387,7 @@ async fn test_invalid_remote_path_traversal_rejected() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/file.rs:10?remote=github.com/../../../etc/passwd")
+                .uri("/myrepo/file.rs@L10?remote=github.com/../../../etc/passwd")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -408,7 +408,7 @@ async fn test_invalid_workspace_shell_metachar_rejected() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/my%60repo/file.rs:10")
+                .uri("/my%60repo/file.rs@L10")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -428,7 +428,7 @@ async fn test_valid_branch_accepted() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/file.rs:10?branch=feature/add-tests")
+                .uri("/myrepo/file.rs@L10?branch=feature/add-tests")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -587,7 +587,7 @@ async fn test_line_number_numeric_extracted() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/file.rs:42")
+                .uri("/myrepo/file.rs@L42")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -597,10 +597,10 @@ async fn test_line_number_numeric_extracted() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let html = String::from_utf8(body.to_vec()).unwrap();
 
-    // Should have :42 extracted as line number, separate from filename
+    // Should have @L42 extracted as line number, separate from filename
     // Uses authority-based format (v1 spec) - workspace IS the authority
     assert!(
-        html.contains("srcuri://myrepo/file.rs:42"),
+        html.contains("srcuri://myrepo/file.rs@L42"),
         "Numeric line suffix should be extracted. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -678,7 +678,7 @@ async fn test_file_path_parentheses_and_brackets_allowed() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/Project%20(1)/src/file[0].rs:7")
+                .uri("/myrepo/Project%20(1)/src/file[0].rs@L7")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -689,7 +689,7 @@ async fn test_file_path_parentheses_and_brackets_allowed() {
     let html = String::from_utf8(body.to_vec()).unwrap();
     // Uses authority-based format (v1 spec) - workspace IS the authority
     assert!(
-        html.contains("srcuri://myrepo/Project (1)/src/file[0].rs:7"),
+        html.contains("srcuri://myrepo/Project (1)/src/file[0].rs@L7"),
         "Expected path with parentheses/brackets to be accepted. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -786,14 +786,14 @@ async fn test_file_path_pipe_rejected() {
 
 #[tokio::test]
 async fn test_implicit_workspace_mode() {
-    // srcuri.com/myrepo/file.rs:42 → srcuri://myrepo/file.rs:42
+    // srcuri.com/myrepo/file.rs@L42 → srcuri://myrepo/file.rs@L42
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/src/main.rs:42")
+                .uri("/myrepo/src/main.rs@L42")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -804,7 +804,7 @@ async fn test_implicit_workspace_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://myrepo/src/main.rs:42"),
+        html.contains("srcuri://myrepo/src/main.rs@L42"),
         "Implicit workspace should produce srcuri://myrepo/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -812,14 +812,14 @@ async fn test_implicit_workspace_mode() {
 
 #[tokio::test]
 async fn test_explicit_workspace_mode() {
-    // srcuri.com/wks/myrepo/file.rs:42 → srcuri://wks/myrepo/file.rs:42
+    // srcuri.com/wks/myrepo/file.rs@L42 → srcuri://wks/myrepo/file.rs@L42
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/wks/myrepo/src/main.rs:42")
+                .uri("/wks/myrepo/src/main.rs@L42")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -830,7 +830,7 @@ async fn test_explicit_workspace_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://wks/myrepo/src/main.rs:42"),
+        html.contains("srcuri://wks/myrepo/src/main.rs@L42"),
         "Explicit workspace should produce srcuri://wks/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -838,14 +838,14 @@ async fn test_explicit_workspace_mode() {
 
 #[tokio::test]
 async fn test_rel_mode() {
-    // srcuri.com/rel/file.rs:42 → srcuri://rel/file.rs:42
+    // srcuri.com/rel/file.rs@L42 → srcuri://rel/file.rs@L42
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/rel/src/utils.py:10")
+                .uri("/rel/src/utils.py@L10")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -856,7 +856,7 @@ async fn test_rel_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://rel/src/utils.py:10"),
+        html.contains("srcuri://rel/src/utils.py@L10"),
         "Rel mode should produce srcuri://rel/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -864,14 +864,14 @@ async fn test_rel_mode() {
 
 #[tokio::test]
 async fn test_any_mode() {
-    // srcuri.com/any/file.rs:42 → srcuri://any/file.rs:42
+    // srcuri.com/any/file.rs@L42 → srcuri://any/file.rs@L42
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/any/src/utils.py:10")
+                .uri("/any/src/utils.py@L10")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -882,7 +882,7 @@ async fn test_any_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://any/src/utils.py:10"),
+        html.contains("srcuri://any/src/utils.py@L10"),
         "Any mode should produce srcuri://any/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -890,14 +890,14 @@ async fn test_any_mode() {
 
 #[tokio::test]
 async fn test_abs_mode() {
-    // srcuri.com/abs/etc/hosts:1 → srcuri://abs/etc/hosts:1
+    // srcuri.com/abs/etc/hosts@L1 → srcuri://abs/etc/hosts@L1
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/abs/etc/hosts:1")
+                .uri("/abs/etc/hosts@L1")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -908,7 +908,7 @@ async fn test_abs_mode() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://abs/etc/hosts:1"),
+        html.contains("srcuri://abs/etc/hosts@L1"),
         "Abs mode should produce srcuri://abs/... URL. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -916,14 +916,14 @@ async fn test_abs_mode() {
 
 #[tokio::test]
 async fn test_abs_mode_windows_path() {
-    // srcuri.com/abs/C:/Users/file.txt:10 → srcuri://abs/C:/Users/file.txt:10
+    // srcuri.com/abs/C:/Users/file.txt@L10 → srcuri://abs/C:/Users/file.txt@L10
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/abs/C:/Users/alice/code/file.txt:10")
+                .uri("/abs/C:/Users/alice/code/file.txt@L10")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -934,7 +934,7 @@ async fn test_abs_mode_windows_path() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://abs/C:/Users/alice/code/file.txt:10"),
+        html.contains("srcuri://abs/C:/Users/alice/code/file.txt@L10"),
         "Abs mode with Windows path should preserve drive letter. HTML: {}",
         &html[..1000.min(html.len())]
     );
@@ -985,7 +985,7 @@ async fn test_reserved_workspace_name_rejected() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/wks/rel/file.rs:1")
+                .uri("/wks/rel/file.rs@L1")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -1004,14 +1004,14 @@ async fn test_reserved_workspace_name_rejected() {
 
 #[tokio::test]
 async fn test_implicit_workspace_with_query_params() {
-    // srcuri.com/myrepo/file.rs:42?branch=main → srcuri://myrepo/file.rs:42?branch=main
+    // srcuri.com/myrepo/file.rs@L42?branch=main → srcuri://myrepo/file.rs@L42?branch=main
     use http_body_util::BodyExt;
 
     let app = create_test_app();
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/myrepo/src/main.rs:42?branch=develop")
+                .uri("/myrepo/src/main.rs@L42?branch=develop")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -1022,7 +1022,7 @@ async fn test_implicit_workspace_with_query_params() {
     let html = String::from_utf8(body.to_vec()).unwrap();
 
     assert!(
-        html.contains("srcuri://myrepo/src/main.rs:42") && html.contains("branch=develop"),
+        html.contains("srcuri://myrepo/src/main.rs@L42") && html.contains("branch=develop"),
         "Query params should be preserved. HTML: {}",
         &html[..1000.min(html.len())]
     );

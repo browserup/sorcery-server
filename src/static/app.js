@@ -28,12 +28,81 @@
         errorMessage.textContent = message;
     }
 
+    function parseAtLineSuffix(target) {
+        const lower = target.toLowerCase();
+        let markerIndex = target.lastIndexOf('@');
+        let markerLen = 1;
+        const encodedIndex = lower.lastIndexOf('%40');
+        if (encodedIndex > markerIndex) {
+            markerIndex = encodedIndex;
+            markerLen = 3;
+        }
+        if (markerIndex === -1) return null;
+
+        const lastSlash = target.lastIndexOf('/');
+        if (markerIndex < lastSlash) return null;
+
+        const suffix = target.slice(markerIndex + markerLen);
+        if (!suffix) return null;
+        if (suffix[0].toLowerCase() !== 'l') return null;
+
+        const rest = suffix.slice(1);
+        if (rest.length === 0) {
+            return { path: target.slice(0, markerIndex), line: null, column: null };
+        }
+
+        let i = 0;
+        while (i < rest.length && rest[i] >= '0' && rest[i] <= '9') {
+            i += 1;
+        }
+
+        if (i > 0) {
+            const line = parseInt(rest.slice(0, i), 10);
+            const rem = rest.slice(i);
+            if (!rem) {
+                return { path: target.slice(0, markerIndex), line, column: null };
+            }
+            const marker = rem[0];
+            if (marker === 'c' || marker === 'C' || marker === ':') {
+                const colTail = rem.slice(1);
+                if (colTail.length === 0) {
+                    return { path: target.slice(0, markerIndex), line, column: null };
+                }
+                if (/^\d+$/.test(colTail)) {
+                    const column = parseInt(colTail, 10);
+                    return { path: target.slice(0, markerIndex), line, column: column <= 120 ? column : null };
+                }
+            }
+            return null;
+        }
+
+        const marker = rest[0];
+        if (marker === 'c' || marker === 'C') {
+            const colTail = rest.slice(1);
+            if (colTail.length === 0 || /^\d+$/.test(colTail)) {
+                return { path: target.slice(0, markerIndex), line: null, column: null };
+            }
+        }
+
+        return null;
+    }
+
     function parseSorceryPayload(raw) {
         log('Parsing payload:', raw);
 
         const [targetPart, queryPart] = raw.split('?', 2);
         let target = targetPart;
         const query = queryPart || '';
+
+        let lineAt = null;
+        let columnAt = null;
+        const atParsed = parseAtLineSuffix(target);
+        if (atParsed) {
+            lineAt = atParsed.line;
+            columnAt = atParsed.column;
+            target = atParsed.path;
+            log('Extracted @L-style line:', lineAt, 'column:', columnAt);
+        }
 
         let lineGithub = null;
         const mGithub = target.match(/#L(\d+)(?:-L?\d+)?$/);
@@ -45,18 +114,20 @@
 
         let lineColon = null;
         let columnColon = null;
-        const mColon = target.match(/:(\d+)(?::(\d+))?$/);
-        if (mColon) {
-            lineColon = parseInt(mColon[1], 10);
-            if (mColon[2]) {
-                columnColon = parseInt(mColon[2], 10);
+        if (!atParsed) {
+            const mColon = target.match(/:(\d+)(?::(\d+))?$/);
+            if (mColon) {
+                lineColon = parseInt(mColon[1], 10);
+                if (mColon[2]) {
+                    columnColon = parseInt(mColon[2], 10);
+                }
+                target = target.substring(0, mColon.index);
+                log('Extracted colon-style line:', lineColon, 'column:', columnColon);
             }
-            target = target.substring(0, mColon.index);
-            log('Extracted colon-style line:', lineColon, 'column:', columnColon);
         }
 
-        const line = lineColon ?? lineGithub ?? null;
-        const column = columnColon ?? null;
+        const line = lineAt ?? lineColon ?? lineGithub ?? null;
+        const column = columnAt ?? columnColon ?? null;
 
         const isAbsolute = target.startsWith('//');
         const path = isAbsolute ? target.substring(2) : target;
@@ -78,9 +149,9 @@
         }
 
         if (parsed.line !== null) {
-            protocolUrl += `:${parsed.line}`;
+            protocolUrl += `@L${parsed.line}`;
             if (parsed.column !== null) {
-                protocolUrl += `:${parsed.column}`;
+                protocolUrl += `C${parsed.column}`;
             }
         }
 
@@ -98,7 +169,7 @@
             log('Raw hash:', hash);
 
             if (!hash || hash.length <= 1) {
-                showError('No file path provided in the URL. Expected format: #path/to/file:line?workspace=name');
+                showError('No file path provided in the URL. Expected format: #path/to/file@L42?workspace=name');
                 return;
             }
 

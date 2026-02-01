@@ -103,7 +103,7 @@
 
     <div class="workspace-info">
         <strong>Workspace Mapping Used for Testing:</strong><br>
-        <code>github.com/ericbeland/enhanced_errors</code> → <code>/Users/ebeland/apps/enhanced_errors</code>
+        <code>github.com/ericbeland/enhanced_errors</code> → <code>/Users/alice/apps/enhanced_errors</code>
     </div>
 
     <hr>
@@ -307,13 +307,13 @@
             <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb">srcuri://enhanced_errors/lib/enhanced_errors.rb</a>
             <span class="expected">→ Opens file in editor</span>
 
-            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb:42">srcuri://enhanced_errors/lib/enhanced_errors.rb:42</a>
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb@L42">srcuri://enhanced_errors/lib/enhanced_errors.rb@L42</a>
             <span class="expected">→ Line 42</span>
 
-            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb:42:10">srcuri://enhanced_errors/lib/enhanced_errors.rb:42:10</a>
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb@L42C10">srcuri://enhanced_errors/lib/enhanced_errors.rb@L42C10</a>
             <span class="expected">→ Line 42, Column 10</span>
 
-            <a href="srcuri://enhanced_errors/README.md:1">srcuri://enhanced_errors/README.md:1</a>
+            <a href="srcuri://enhanced_errors/README.md@L1">srcuri://enhanced_errors/README.md@L1</a>
             <span class="expected">→ README line 1</span>
         </div>
     </div>
@@ -322,16 +322,16 @@
     <div class="test-group">
         <h4>With Branch and Remote</h4>
         <div class="links">
-            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb:42?branch=main&remote=github.com/ericbeland/enhanced_errors">srcuri://enhanced_errors/...?branch=main&remote=...</a>
+            <a href="srcuri://enhanced_errors/lib/enhanced_errors.rb@L42?branch=main&remote=github.com/ericbeland/enhanced_errors">srcuri://enhanced_errors/...?branch=main&remote=...</a>
             <span class="expected">→ Full params: branch + remote</span>
 
-            <a href="srcuri://rails/activerecord/lib/active_record/base.rb:50?branch=main&remote=github.com/rails/rails">srcuri://rails/.../base.rb:50?branch=main&remote=github.com/rails/rails</a>
+            <a href="srcuri://rails/activerecord/lib/active_record/base.rb@L50?branch=main&remote=github.com/rails/rails">srcuri://rails/.../base.rb@L50?branch=main&remote=github.com/rails/rails</a>
             <span class="expected">→ Rails ActiveRecord with params</span>
 
-            <a href="srcuri://rails/activerecord/lib/active_record/base.rb:50?branch=7-2-stable&remote=github.com/rails/rails">srcuri://rails/.../base.rb:50?branch=7-2-stable&remote=...</a>
+            <a href="srcuri://rails/activerecord/lib/active_record/base.rb@L50?branch=7-2-stable&remote=github.com/rails/rails">srcuri://rails/.../base.rb@L50?branch=7-2-stable&remote=...</a>
             <span class="expected">→ Rails 7-2-stable branch</span>
 
-            <a href="srcuri://rails/activerecord/lib/active_record/base.rb:50?branch=5-2-stable&remote=github.com/rails/rails">srcuri://rails/.../base.rb:50?branch=5-2-stable&remote=...</a>
+            <a href="srcuri://rails/activerecord/lib/active_record/base.rb@L50?branch=5-2-stable&remote=github.com/rails/rails">srcuri://rails/.../base.rb@L50?branch=5-2-stable&remote=...</a>
             <span class="expected">→ Rails 5-2-stable branch</span>
         </div>
     </div>
@@ -533,7 +533,7 @@
         </tr>
         <tr>
             <td>Direct protocol</td>
-            <td><code>srcuri://repo/file:42?branch=x&remote=...</code></td>
+            <td><code>srcuri://repo/file@L42?branch=x&remote=...</code></td>
             <td>Bypasses server</td>
         </tr>
     </table>
