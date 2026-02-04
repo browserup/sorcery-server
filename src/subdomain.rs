@@ -1,7 +1,7 @@
 use crate::strip_port;
 use axum::http::Uri;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SubdomainMode {
     DirectProtocol,
     WwwRedirect,
@@ -19,6 +19,7 @@ pub fn detect_mode(host: &str, uri: &Uri) -> SubdomainMode {
     detect_mode_from_host(host)
 }
 
+#[must_use]
 pub fn is_localhost(host: &str) -> bool {
     let host_without_port = strip_port(host);
     host_without_port == "localhost"

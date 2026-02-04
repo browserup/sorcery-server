@@ -12,6 +12,7 @@ pub struct AppState {
     pub base_domain: String,
 }
 
+#[must_use]
 pub fn strip_port(host: &str) -> &str {
     host.split(':').next().unwrap_or(host)
 }

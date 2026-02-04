@@ -9,12 +9,15 @@ pub struct TenantConfig {
 }
 
 impl TenantConfig {
+    /// # Errors
+    /// Returns an error if the file cannot be read or contains invalid JSON.
     pub async fn load_from_file(path: PathBuf) -> Result<Self, std::io::Error> {
         let content = tokio::fs::read_to_string(path).await?;
         serde_json::from_str(&content)
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
     }
 
+    #[must_use]
     pub fn default_config() -> Self {
         Self {
             name: "default".to_string(),

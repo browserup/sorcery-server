@@ -11,19 +11,19 @@ use std::fmt::Write;
 use tracing::error;
 
 /// URL mode based on authority (first path segment)
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UrlMode {
-    /// srcuri.com/myrepo/... → srcuri://myrepo/...
+    /// srcuri.com/myrepo/... → <srcuri://myrepo/...>
     ImplicitWorkspace,
-    /// srcuri.com/wks/myrepo/... → srcuri://wks/myrepo/...
+    /// srcuri.com/wks/myrepo/... → <srcuri://wks/myrepo/...>
     ExplicitWorkspace,
-    /// srcuri.com/rel/... → srcuri://rel/...
+    /// srcuri.com/rel/... → <srcuri://rel/...>
     Relative,
-    /// srcuri.com/any/... → srcuri://any/...
+    /// srcuri.com/any/... → <srcuri://any/...>
     Any,
-    /// srcuri.com/abs/... → srcuri://abs/...
+    /// srcuri.com/abs/... → <srcuri://abs/...>
     Absolute,
-    /// srcuri.com/ext/https/... → srcuri://ext/https/...
+    /// srcuri.com/ext/https/... → <srcuri://ext/https/...>
     External,
 }
 
@@ -120,7 +120,7 @@ fn is_valid_workspace_name(name: &str) -> bool {
 /// Validate file paths - safe characters only, no shell metacharacters.
 /// Allows: alphanumeric, standard path chars (-_./), space, @ (npm scopes), + (C++ files),
 /// parentheses, square brackets, and tilde (for home paths like ~/... or backup files like file~).
-/// For Windows paths, allows ':' after drive letter (e.g., C:/Users/...).
+/// For Windows paths, allows ':' after drive letter (e.g., `C:/Users/...`).
 fn is_valid_file_path(path: &str) -> bool {
     if path.is_empty() || path.len() > 1024 {
         return false;
@@ -128,11 +128,7 @@ fn is_valid_file_path(path: &str) -> bool {
 
     // Check for Windows drive letter pattern (X:/ where X is A-Z)
     let is_windows_path = path.len() >= 3
-        && path
-            .chars()
-            .next()
-            .map(|c| c.is_ascii_alphabetic())
-            .unwrap_or(false)
+        && path.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
         && path.chars().nth(1) == Some(':')
         && path.chars().nth(2) == Some('/');
 
@@ -169,6 +165,7 @@ pub struct MirrorQuery {
 }
 
 /// Root handler: ?remote= for provider passthrough, else landing page
+#[allow(clippy::option_if_let_else)]
 pub async fn root_handler(Query(params): Query<PassthroughQuery>) -> Response {
     match params.remote {
         Some(remote_url) => passthrough_redirect(&remote_url).into_response(),
@@ -334,22 +331,21 @@ fn render_invalid_ref_error(param_type: &str, ref_name: &str) -> Response {
         })
         .collect();
 
-    let allowed_chars = match param_type {
-        "branch" => "letters, numbers, and - _ . / @ , ( ) + # =",
-        "tag" => "letters, numbers, and - _ . / +",
-        _ => "letters, numbers, and - _ . / @ , ( ) + # =",
+    let allowed_chars = if param_type == "tag" {
+        "letters, numbers, and - _ . / +"
+    } else {
+        "letters, numbers, and - _ . / @ , ( ) + # ="
     };
 
     let template = ErrorTemplate {
         message: format!(
-            "Invalid {} name: \"{}\". {} names may only contain {}",
-            param_type, safe_display, param_type, allowed_chars
+            "Invalid {param_type} name: \"{safe_display}\". {param_type} names may only contain {allowed_chars}"
         ),
         url: String::new(),
     };
     let html = template.render().unwrap_or_else(|err| {
         error!(error = %err, "Failed to render error template");
-        format!("Template error: {}", err)
+        format!("Template error: {err}")
     });
     Html(html).into_response()
 }
@@ -369,22 +365,18 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
 
     let message = match param_type {
         "remote" => format!(
-            "Invalid remote URL: \"{}\". Remote URLs may only contain letters, numbers, and - _ . / : @",
-            safe_display
+            "Invalid remote URL: \"{safe_display}\". Remote URLs may only contain letters, numbers, and - _ . / : @"
         ),
         "workspace" => format!(
-            "Invalid workspace name: \"{}\". Workspace names may only contain letters, numbers, and - _ .",
-            safe_display
+            "Invalid workspace name: \"{safe_display}\". Workspace names may only contain letters, numbers, and - _ ."
         ),
         "commit" => format!(
-            "Invalid commit SHA: \"{}\". Commit SHAs must be 7-64 hexadecimal characters (0-9, a-f)",
-            safe_display
+            "Invalid commit SHA: \"{safe_display}\". Commit SHAs must be 7-64 hexadecimal characters (0-9, a-f)"
         ),
         "path" => format!(
-            "Invalid file path: \"{}\". Paths may only contain letters, numbers, and - _ . / @ + (space) ( ) [ ] with an optional leading ~",
-            safe_display
+            "Invalid file path: \"{safe_display}\". Paths may only contain letters, numbers, and - _ . / @ + (space) ( ) [ ] with an optional leading ~"
         ),
-        _ => format!("Invalid {}: \"{}\"", param_type, safe_display),
+        _ => format!("Invalid {param_type}: \"{safe_display}\""),
     };
 
     let template = ErrorTemplate {
@@ -393,7 +385,7 @@ fn render_invalid_param_error(param_type: &str, value: &str) -> Response {
     };
     let html = template.render().unwrap_or_else(|err| {
         error!(error = %err, "Failed to render error template");
-        format!("Template error: {}", err)
+        format!("Template error: {err}")
     });
     Html(html).into_response()
 }
@@ -456,7 +448,7 @@ fn parse_mirror_path(path: &str, mode: UrlMode, params: MirrorQuery) -> SrcuriTa
             // Workspace modes: split into workspace/repo and file path
             let parts: Vec<&str> = path_without_line.splitn(2, '/').collect();
             let repo_name = parts.first().unwrap_or(&"").to_string();
-            let file_path = parts.get(1).map(|s| s.to_string());
+            let file_path = parts.get(1).map(ToString::to_string);
 
             SrcuriTarget {
                 remote,
@@ -476,26 +468,26 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
         UrlMode::Absolute => {
             // Absolute path: srcuri://abs/path/to/file
             let path = target.file_path.as_deref().unwrap_or("");
-            format!("srcuri://abs/{}", path)
+            format!("srcuri://abs/{path}")
         }
         UrlMode::Relative => {
             // Relative mode: srcuri://rel/path/to/file
             let path = target.file_path.as_deref().unwrap_or("");
-            format!("srcuri://rel/{}", path)
+            format!("srcuri://rel/{path}")
         }
         UrlMode::Any => {
             // Any mode: srcuri://any/path/to/file
             let path = target.file_path.as_deref().unwrap_or("");
-            format!("srcuri://any/{}", path)
+            format!("srcuri://any/{path}")
         }
         UrlMode::External => {
             // External mode: srcuri://ext/path (preserved from URL)
             let path = target.file_path.as_deref().unwrap_or("");
-            format!("srcuri://ext/{}", path)
+            format!("srcuri://ext/{path}")
         }
         UrlMode::ExplicitWorkspace => {
             // Explicit workspace: srcuri://wks/repo/path
-            let mut s = format!("srcuri://wks/{}", target.repo_name);
+            let mut s = format!("srcuri://wks/{}", &target.repo_name);
             if let Some(ref path) = target.file_path {
                 s.push('/');
                 s.push_str(path);
@@ -504,7 +496,7 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
         }
         UrlMode::ImplicitWorkspace => {
             // Implicit workspace: srcuri://repo/path (authority IS workspace)
-            let mut s = format!("srcuri://{}", target.repo_name);
+            let mut s = format!("srcuri://{}", &target.repo_name);
             if let Some(ref path) = target.file_path {
                 s.push('/');
                 s.push_str(path);
@@ -514,14 +506,14 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
     };
 
     if let Some(line) = target.line {
-        let _ = write!(srcuri, "@L{}", line);
+        let _ = write!(srcuri, "@L{line}");
     }
 
     let mut query_parts = Vec::new();
     if let Some(ref branch) = target.ref_value {
         // URL-encode branch names to handle special characters like + # =
         let encoded: String = url::form_urlencoded::byte_serialize(branch.as_bytes()).collect();
-        query_parts.push(format!("branch={}", encoded));
+        query_parts.push(format!("branch={encoded}"));
     }
     if !target.remote.is_empty() {
         // Always output with https:// prefix for git clone compatibility
@@ -534,15 +526,12 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
 
     // Build display info
     let display_path = target.file_path.as_deref().unwrap_or("");
-    let display_line = target.line.map(|l| format!("@L{}", l)).unwrap_or_default();
+    let display_line = target.line.map(|l| format!("@L{l}")).unwrap_or_default();
     let display_branch = target.ref_value.as_deref().unwrap_or("main");
 
     // Generate OG description
     let og_description = if !display_path.is_empty() {
-        format!(
-            "{}{} on {} branch",
-            display_path, display_line, display_branch
-        )
+        format!("{display_path}{display_line} on {display_branch} branch")
     } else if !target.repo_name.is_empty() {
         format!("{} repository", target.repo_name)
     } else {
@@ -565,7 +554,7 @@ fn render_mirror_page_with_mode(target: &SrcuriTarget, mode: UrlMode) -> Respons
 
     let html = template.render().unwrap_or_else(|err| {
         error!(error = %err, "Failed to render mirror template");
-        format!("Template error: {}", err)
+        format!("Template error: {err}")
     });
 
     let mut response = Html(html).into_response();
@@ -589,13 +578,13 @@ fn render_error(error: ParseError) -> Html<String> {
     };
     let html = template.render().unwrap_or_else(|err| {
         error!(error = %err, "Failed to render error template");
-        format!("Template error: {}", err)
+        format!("Template error: {err}")
     });
     Html(html)
 }
 
 /// Normalize remote URL to strip protocol prefix.
-/// Accepts both "github.com/owner/repo" and "https://github.com/owner/repo".
+/// Accepts both "github.com/owner/repo" and "<https://github.com/owner/repo>".
 /// Returns just "github.com/owner/repo" for consistent internal storage.
 fn normalize_remote(remote: Option<String>) -> String {
     remote

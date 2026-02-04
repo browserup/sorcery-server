@@ -48,8 +48,7 @@ async fn run() -> anyhow::Result<()> {
         .init();
 
     let tenants_dir = std::env::var("TENANTS_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("sorcery-server/tenants"));
+        .map_or_else(|_| PathBuf::from("sorcery-server/tenants"), PathBuf::from);
 
     let base_domain = std::env::var("BASE_DOMAIN").unwrap_or_else(|_| "srcuri.com".to_string());
 
@@ -106,7 +105,7 @@ async fn run() -> anyhow::Result<()> {
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await
-        .with_context(|| format!("bind to {}", addr))?;
+        .with_context(|| format!("bind to {addr}"))?;
 
     tracing::info!("Sorcery Server listening on {}", addr);
     tracing::info!("Base URL: http://{}", addr);
@@ -140,7 +139,8 @@ async fn subdomain_aware_root(
             let new_uri = format!(
                 "https://{}{}",
                 state.base_domain,
-                uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/")
+                uri.path_and_query()
+                    .map_or("/", axum::http::uri::PathAndQuery::as_str)
             );
             Redirect::permanent(&new_uri).into_response()
         }
@@ -164,7 +164,8 @@ async fn subdomain_aware_fallback(
             let new_uri = format!(
                 "https://{}{}",
                 state.base_domain,
-                uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/")
+                uri.path_and_query()
+                    .map_or("/", axum::http::uri::PathAndQuery::as_str)
             );
             Redirect::permanent(&new_uri).into_response()
         }
@@ -201,7 +202,7 @@ async fn serve_app_js(TypedHeader(host): TypedHeader<Host>) -> Response<Body> {
     if !is_localhost {
         let expires_time = SystemTime::now()
             .checked_add(Duration::from_secs(ONE_DAY_SECS))
-            .unwrap_or(SystemTime::now());
+            .unwrap_or_else(SystemTime::now);
         let expires_http = HttpDate::from(expires_time).to_string();
         response.headers_mut().insert(
             header::CACHE_CONTROL,
@@ -236,7 +237,7 @@ async fn serve_favicon(TypedHeader(host): TypedHeader<Host>) -> Response<Body> {
     if !is_localhost {
         let expires_time = SystemTime::now()
             .checked_add(Duration::from_secs(NINETY_DAYS_SECS))
-            .unwrap_or(SystemTime::now());
+            .unwrap_or_else(SystemTime::now);
         let expires_http = HttpDate::from(expires_time).to_string();
         response.headers_mut().insert(
             header::CACHE_CONTROL,

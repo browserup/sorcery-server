@@ -14,6 +14,7 @@ pub struct TenantManager {
 }
 
 impl TenantManager {
+    #[must_use]
     pub fn new(tenants_dir: PathBuf) -> Self {
         Self {
             configs: RwLock::new(HashMap::new()),
@@ -21,12 +22,14 @@ impl TenantManager {
         }
     }
 
+    #[allow(clippy::significant_drop_tightening)]
     pub async fn get_config(&self, subdomain: &str) -> Arc<TenantConfig> {
-        if let Some(config) = self.configs.read().await.get(subdomain).cloned() {
+        let cached = self.configs.read().await.get(subdomain).cloned();
+        if let Some(config) = cached {
             return config;
         }
 
-        let config_path = self.tenants_dir.join(format!("{}.json", subdomain));
+        let config_path = self.tenants_dir.join(format!("{subdomain}.json"));
         let config = match TenantConfig::load_from_file(config_path).await {
             Ok(config) => config,
             Err(err) => {
@@ -43,6 +46,8 @@ impl TenantManager {
         Arc::clone(entry)
     }
 
+    #[must_use]
+    #[allow(clippy::option_if_let_else)]
     pub fn extract_subdomain(host: &str) -> String {
         if let Some(subdomain) = host.split('.').next() {
             if subdomain == "srcuri" || subdomain.contains(':') {

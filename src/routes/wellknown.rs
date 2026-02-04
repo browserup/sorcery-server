@@ -1,7 +1,10 @@
-use crate::tenant::config::TenantConfig;
-use crate::AppState;
+#![allow(clippy::items_after_statements)]
+
 use axum::{debug_handler, extract::State, http::HeaderMap, response::Json};
 use std::sync::Arc;
+
+use crate::tenant::config::TenantConfig;
+use crate::AppState;
 
 #[debug_handler]
 pub async fn wellknown_handler(
