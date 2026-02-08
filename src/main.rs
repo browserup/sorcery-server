@@ -10,12 +10,14 @@ use axum::{
 use axum_extra::TypedHeader;
 use headers::Host;
 use httpdate::HttpDate;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tower_governor::{
-    governor::GovernorConfigBuilder, key_extractor::SmartIpKeyExtractor, GovernorLayer,
+    governor::GovernorConfigBuilder,
+    key_extractor::{KeyExtractor, PeerIpKeyExtractor, SmartIpKeyExtractor},
+    GovernorError, GovernorLayer,
 };
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
@@ -29,6 +31,23 @@ use sorcery_server::{
 
 const ONE_DAY_SECS: u64 = 86_400;
 const NINETY_DAYS_SECS: u64 = 7_776_000;
+
+#[derive(Debug, Clone, Copy)]
+struct ConfigurableIpExtractor {
+    trust_proxy: bool,
+}
+
+impl KeyExtractor for ConfigurableIpExtractor {
+    type Key = IpAddr;
+
+    fn extract<T>(&self, req: &axum::http::Request<T>) -> Result<Self::Key, GovernorError> {
+        if self.trust_proxy {
+            SmartIpKeyExtractor.extract(req)
+        } else {
+            PeerIpKeyExtractor.extract(req)
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
@@ -59,12 +78,15 @@ async fn run() -> anyhow::Result<()> {
         base_domain,
     };
 
-    // Rate limiting: 60 requests per minute per IP (1 request per second on average)
+    let trust_proxy = std::env::var("TRUST_PROXY_HEADERS")
+        .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+        .unwrap_or(false);
+
     let governor_config = Arc::new(
         GovernorConfigBuilder::default()
             .per_second(1)
             .burst_size(60)
-            .key_extractor(SmartIpKeyExtractor)
+            .key_extractor(ConfigurableIpExtractor { trust_proxy })
             .finish()
             .context("build rate limiter config")?,
     );
@@ -86,8 +108,8 @@ async fn run() -> anyhow::Result<()> {
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
-                .allow_methods(Any)
-                .allow_headers(Any),
+                .allow_methods([axum::http::Method::GET])
+                .allow_headers([header::ACCEPT, header::CONTENT_TYPE]),
         )
         .layer(TraceLayer::new_for_http());
 

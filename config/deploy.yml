@@ -33,3 +33,4 @@ env:
     RUST_LOG: "sorcery_server=info"
     TENANTS_DIR: "/app/tenants"
     BASE_DOMAIN: "srcuri.com"
+    TRUST_PROXY_HEADERS: "true"

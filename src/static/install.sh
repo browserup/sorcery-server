@@ -246,6 +246,59 @@ install_linux_appimage() {
     success "$APP_NAME installed to $app_path"
 }
 
+verify_checksum() {
+    local artifact_path="$1"
+    local version="$2"
+    local artifact_name
+    artifact_name=$(basename "$artifact_path")
+
+    local checksums_url="https://github.com/$REPO/releases/download/$version/SHA256SUMS"
+    local checksums_file
+    checksums_file="$(dirname "$artifact_path")/SHA256SUMS"
+
+    info "Verifying artifact checksum..."
+
+    if command -v curl >/dev/null 2>&1; then
+        if ! curl -fsSL -o "$checksums_file" "$checksums_url" 2>/dev/null; then
+            warn "SHA256SUMS not available for this release, skipping verification"
+            return 0
+        fi
+    elif command -v wget >/dev/null 2>&1; then
+        if ! wget -q -O "$checksums_file" "$checksums_url" 2>/dev/null; then
+            warn "SHA256SUMS not available for this release, skipping verification"
+            return 0
+        fi
+    fi
+
+    local expected_hash
+    expected_hash=$(grep "$artifact_name" "$checksums_file" | awk '{print $1}')
+
+    if [ -z "$expected_hash" ]; then
+        warn "No checksum entry for $artifact_name, skipping verification"
+        rm -f "$checksums_file"
+        return 0
+    fi
+
+    local actual_hash
+    if command -v sha256sum >/dev/null 2>&1; then
+        actual_hash=$(sha256sum "$artifact_path" | awk '{print $1}')
+    elif command -v shasum >/dev/null 2>&1; then
+        actual_hash=$(shasum -a 256 "$artifact_path" | awk '{print $1}')
+    else
+        warn "Neither sha256sum nor shasum found, skipping verification"
+        rm -f "$checksums_file"
+        return 0
+    fi
+
+    rm -f "$checksums_file"
+
+    if [ "$actual_hash" != "$expected_hash" ]; then
+        error "Checksum mismatch! Expected $expected_hash, got $actual_hash. The download may be corrupted or tampered with."
+    fi
+
+    success "Checksum verified"
+}
+
 launch_app() {
     local os="$1"
 
@@ -306,6 +359,7 @@ main() {
     local artifact_path="$temp_dir/$artifact_name"
 
     download_file "$artifact_url" "$artifact_path"
+    verify_checksum "$artifact_path" "$version"
 
     case "$os" in
         macos)

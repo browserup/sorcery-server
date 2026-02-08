@@ -29,6 +29,7 @@ async fn test_wellknown_endpoint() {
         .oneshot(
             Request::builder()
                 .uri("/.well-known/srcuri.json")
+                .header("host", "srcuri.com")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -442,6 +443,48 @@ async fn test_valid_branch_accepted() {
     assert!(!html.contains("Invalid"));
     // Should contain the srcuri URL
     assert!(html.contains("srcuri://"));
+}
+
+#[tokio::test]
+async fn test_wellknown_traversal_host_rejected() {
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/.well-known/srcuri.json")
+                .header("host", "../etc.srcuri.com")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(
+        response.status(),
+        StatusCode::BAD_REQUEST,
+        "Path traversal in Host header should be rejected by typed extractor"
+    );
+}
+
+#[tokio::test]
+async fn test_wellknown_valid_tenant_returns_ok() {
+    use http_body_util::BodyExt;
+
+    let app = create_test_app();
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/.well-known/srcuri.json")
+                .header("host", "acme.srcuri.com")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let _json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 }
 
 fn create_test_app() -> axum::Router {
